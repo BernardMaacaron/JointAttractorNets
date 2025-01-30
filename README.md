@@ -6,6 +6,8 @@ This repository explores attractor networks tailored to the joint-space of robot
 - **Brian2** Code: [Branch `Brian2-main`](https://github.com/BernardMaacaron/JointAttractorNets/tree/Brian2-main)  
 - **PyTorch** Code: [Branch `PyTorch-main`](https://github.com/BernardMaacaron/JointAttractorNets/tree/PyTorch-main)
 
+**Note:** The excel sheet contains the *architecture specifications* for the attractor networks can be found [here](https://istitutoitalianotecnologia-my.sharepoint.com/:x:/g/personal/bernard_maacaron_iit_it/EaOFdtbEMGZJgHFSxeu-YYEBvUkEcJdpQA-ryHbPz62cdQ?e=WyVAhq). Access is required.
+
 ---
 
 ## Branches
