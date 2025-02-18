@@ -2,6 +2,7 @@
 # This code simulates a single neuron of choice
 #import brian2
 from brian2 import *
+
 import sys
 sys.path.append('Neuron and Synapse Models')
 from NeuronModels import *
@@ -42,9 +43,22 @@ class Gaussian_Input_Generator:
     def generate_cue(self):
         
         wraps = np.arange(-5, 6)
-        y_prime_prime = (self.x[:,None]-self.mu+wraps*360)
-        y_prime = np.exp(-0.5 * (y_prime_prime /self.sigma)**2)
-        y = self.amp * np.sum(y_prime,axis=0)
+        y_for_mimi = (self.x[:,None]-self.mu+wraps*360)
+        print(y_for_mimi.shape)
+        #fig = plt.figure()
+        #ax = fig.add_subplot(3, 1, 1)
+        #ax.plot(y_for_mimi)
+        # plt.show()
+        y_bernard = np.exp(-0.5 * (y_for_mimi /self.sigma)**2)
+        print(y_bernard.shape)
+        #ax2 = fig.add_subplot(3, 1, 2)
+        #ax2.plot(y_bernard)
+        y = self.amp * np.sum(y_bernard,axis=1)
+        print(y.shape)
+        #ax3 = fig.add_subplot(3, 1, 3)
+        #ax3.plot(y)
+        #plt.show()
+        
         # wrapped_gaussian=np.sum(exp(-0.5 * ((self.x[:,None]-self.mu+wraps*360) / self.sigma)**2),axis=1)
         # normalization=1/(self.sigma*(2*pi)**0.5)
 
@@ -72,7 +86,7 @@ import numpy as np
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
-def simulate(duration, plot_states=False): #, input_weights=None, nput_gen=0, ):
+def simulate(duration, plot_states=True): #, input_weights=None, nput_gen=0, ):
         
         
         #The input generated consists of all the 10 spikes to fire in parallel at t = 0 s
@@ -81,27 +95,29 @@ def simulate(duration, plot_states=False): #, input_weights=None, nput_gen=0, ):
         #     N=10, indices = np.concatenate([4*np.ones(100), 5*np.ones(100)],axis=0), times= np.concatenate([np.linspace(0,20,100), np.linspace(0,20,100)],axis=0)*ms
         # )
         
-        gaussian_gen = Gaussian_Input_Generator(n=120, amp=10, mu=180, sigma=2, noise=False) #m=0.8
+        gaussian_gen = Gaussian_Input_Generator(n=120, amp=800, mu=180, sigma=2, noise=False) #m=0.8
         input_gen = gaussian_gen.to_brian2_neuron_group()
         input_weights = gaussian_gen.generate_cue() #those are too low
         
         # TODO: FIx the weights
-        obj_network = RingAttractor(N=120,wee = 460*mV, wei = 460*mV, wie = 4200*mV, wii = 5600*mV)
+        obj_network = RingAttractor(N=120,wee = 735*mV, wei = 5*mV, wie = 30*mV, wii = 4000*mV, V_input=input_weights * mV)
+        #wee = 735*mV, wei = 5*mV, wie = 15*mV, wii = 400*mV
+
+
+        #connecting_input = Synapses(input_gen, obj_network.excitatory_neurons, model='W_input : volt', name="input_synapses", on_pre="V_post += W_input")
+        #connecting_input.connect(j="i")
+        #connecting_input.W_input[:] = input_weights.flatten() * volt
+        #print(connecting_input.W_input)
+        #print(connecting_input.W_input_)
         
-        connecting_input = Synapses(input_gen, obj_network.excitatory_neurons, model='W_input : volt', name="input_synapses", on_pre="V_post += W_input")
-        connecting_input.connect(j="i")
-        connecting_input.W_input[:] = input_weights.flatten() * volt
-        print(connecting_input.W_input)
-        display(connecting_input.W_input_)
-        
-        spike_monitor_input = SpikeMonitor(input_gen, name="spike_input")
+        #spike_monitor_input = SpikeMonitor(input_gen, name="spike_input")
         
         network = obj_network.net
         print(network)
         
-        network.add(input_gen)
-        network.add(connecting_input)
-        network.add(spike_monitor_input)
+        #network.add(input_gen)
+        #network.add(connecting_input)
+        #network.add(spike_monitor_input)
         
         """
         state_monitors = StateMonitor(obj_network.excitatory_neurons, "V", record=True, name="state_excitatory")
@@ -117,7 +133,7 @@ def simulate(duration, plot_states=False): #, input_weights=None, nput_gen=0, ):
 
         if plot_states:
             fig, ax = plt.subplots(4,1)
-            ax[0].plot(spike_monitor_input.t/ms, spike_monitor_input.i, '.k', ms=3)
+            #ax[0].plot(spike_monitor_input.t/ms, spike_monitor_input.i, '.k', ms=3)
             ax[0].set_xlim(0, duration/ms)
             ax[0].set_ylim(0, obj_network.N)
             ax[0].set_xlabel('Time (ms)')
@@ -144,8 +160,8 @@ def simulate(duration, plot_states=False): #, input_weights=None, nput_gen=0, ):
             ax[3].set_xlim([0, duration/ms])
             ax[3].set_title('Excitatory Neuron')
             #ax[3].legend()
-
             plt.tight_layout()
+            plt.show()
 
         return obj_network.state_monitors, obj_network.spike_monitors, obj_network.inhibitory_state_monitors, obj_network.inhibitory_spike_monitors
     
