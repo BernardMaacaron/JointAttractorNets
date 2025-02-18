@@ -5,29 +5,9 @@ def neuron_distance(i ,j, N=120):
     # Use np.minimum which is vectorized over arrays.
     return np.minimum(np.abs(i - j), N - np.abs(i - j))
 
+# NOTE: There is a numpy function np.deg2rad which converts degrees to radians.
 def return_radians_angle(i, N=120):
     return 2*pi*i/N * radian
-
-def visualise_connectivity(S):
-    Ns = len(S.source)
-    Nt = len(S.target)
-    figure(figsize=(10, 4))
-    subplot(121)
-    plot(zeros(Ns), arange(Ns), 'ok', ms=10)
-    plot(ones(Nt), arange(Nt), 'ok', ms=10)
-    for i, j in zip(S.i, S.j):
-        plot([0, 1], [i, j], '-k')
-    xticks([0, 1], ['Source', 'Target'])
-    ylabel('Neuron index')
-    xlim(-0.1, 1.1)
-    ylim(-1, max(Ns, Nt))
-    subplot(122)
-    plot(S.i, S.j, 'ok')
-    xlim(-1, Ns)
-    ylim(-1, Nt)
-    xlabel('Source neuron index')
-    ylabel('Target neuron index')
-
 
 class RingAttractor():
     def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000*mV, wei = 5*mV, wie = 500 *mV, wii = 4 *mV, sigma=0.4, mode_weights="gaussian"):
