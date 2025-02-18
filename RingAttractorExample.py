@@ -100,7 +100,7 @@ def simulate(duration, plot_states=True): #, input_weights=None, nput_gen=0, ):
         input_weights = gaussian_gen.generate_cue() #those are too low
         
         # TODO: FIx the weights
-        obj_network = RingAttractor(N=120,wee = 735*mV, wei = 3*mV, wie = 30*mV, wii = 4000*mV, V_input=input_weights * mV)
+        obj_network = RingAttractor(N=120,wee = 735*10*mV, wei = 3*10*mV, wie = 30*10*mV, wii = 4000*10*mV, V_input=input_weights * mV)
         #wee = 735*mV, wei = 5*mV, wie = 15*mV, wii = 400*mV
 
 
