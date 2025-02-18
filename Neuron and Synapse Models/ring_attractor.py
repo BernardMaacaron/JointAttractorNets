@@ -30,7 +30,7 @@ def visualise_connectivity(S):
 
 
 class RingAttractor():
-    def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000*mV, wei = 5*mV, wie = 500 *mV, wii = 4 *mV, sigma=0.4, mode_weights="gaussian"):
+    def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000*mV, wei = 5*mV, wie = 500 *mV, wii = 4 *mV, sigma=0.4, mode_weights="gaussian", V_input=None):
         #self.Vthr = Vth * mV
         #self.V_reset = V_reset * mV
         #self.V_rest = V_rest * mV
@@ -40,7 +40,11 @@ class RingAttractor():
         self.inhibit_neuron = NeuronGroup(1, LIF_eq, threshold = "V > Vth", reset = "V = V_reset", method="euler", name="inhibitory_neurons")
         self.excitatory_neurons = NeuronGroup(self.N, LIF_eq, threshold = "V > Vth", reset = "V = V_reset", method="euler", name="excitatory_neurons")
         self.inhibit_neuron.V = V_rest
-        self.excitatory_neurons.V = V_rest
+        if V_input.any() != None:
+            for neuron_idx in range(self.N):
+                self.excitatory_neurons.V[neuron_idx] = V_rest + V_input[neuron_idx]
+        else:
+            self.excitatory_neurons.V = V_rest
 
         rows, cols = np.indices((self.N, self.N))
         distance_matrix = neuron_distance(rows, cols, self.N)
@@ -52,9 +56,9 @@ class RingAttractor():
  
         self.Ring2Inh = Synapses(self.excitatory_neurons, self.inhibit_neuron, "W_ring2inh : volt", name="ring2inh_synapses", on_pre="V_post += W_ring2inh")
 
-        self.Inh2Ring = Synapses(self.inhibit_neuron, self.excitatory_neurons, model="W_inh2ring : volt", name="inh2ring_synapses", on_post="V_post -= W_inh2ring ") #in this case I want the inhibitory neuron (presynaptic) to inhibit the neuron only if the post synaptic (excitatory) is firing too much
+        self.Inh2Ring = Synapses(self.inhibit_neuron, self.excitatory_neurons, model="W_inh2ring : volt", name="inh2ring_synapses", on_pre="V_post -= W_inh2ring ") #in this case I want the inhibitory neuron (presynaptic) to inhibit the neuron only if the post synaptic (excitatory) is firing too much
  
-        self.Inh2Inh = Synapses(self.inhibit_neuron, self.inhibit_neuron, model = "W_inh2inh : volt", name="inh2inh_synapses", on_post="V_post -= W_inh2inh")
+        self.Inh2Inh = Synapses(self.inhibit_neuron, self.inhibit_neuron, model = "W_inh2inh : volt", name="inh2inh_synapses", on_pre="V_post -= W_inh2inh")
         
         self.Ring2Ring = Synapses(self.excitatory_neurons, self.excitatory_neurons, model="W_ring2ring : volt", name="ring2rings_synapses", on_pre="V_post += W_ring2ring")
 
@@ -69,10 +73,10 @@ class RingAttractor():
         #visualise_connectivity(self.Ring2Inh, self.Inh2Ring, self.Inh2Inh, self.Ring2Ring)
 
         #Plotting the connectivity between neurons
-        visualise_connectivity(self.Ring2Inh)
-        visualise_connectivity(self.Inh2Ring)
-        visualise_connectivity(self.Inh2Inh)
-        visualise_connectivity(self.Ring2Ring)
+        #visualise_connectivity(self.Ring2Inh)
+        #visualise_connectivity(self.Inh2Ring)
+        #visualise_connectivity(self.Inh2Inh)
+        #visualise_connectivity(self.Ring2Ring)
         
 
         self.net = Network(collect()) #level=1, [self.excitatory_neurons, self.inhibit_neuron, self.Ring2Inh, self.Ring2Ring, self.Inh2Inh, self.Inh2Ring])) #it`s not collecting anything
