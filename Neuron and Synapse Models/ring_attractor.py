@@ -30,7 +30,7 @@ def visualise_connectivity(S):
 
 
 class RingAttractor():
-    def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000*mV, wei = 5*mV, wie = 500 *mV, wii = 4 *mV, sigma=0.4, mode_weights="gaussian", V_input=None):
+    def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000/10*mV, wei = 5/10*mV, wie = 500/10 *mV, wii = 4 /10*mV, sigma=0.4, mode_weights="gaussian", V_input=None):
         #self.Vthr = Vth * mV
         #self.V_reset = V_reset * mV
         #self.V_rest = V_rest * mV
