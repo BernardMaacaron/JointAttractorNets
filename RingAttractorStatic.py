@@ -104,13 +104,6 @@ if plot_states:
 
 #TODO : Here I need a way to visualize the output of the network (which is inferred from the spiking of the excitatory neurons)
 
-#print(obj_network.state_monitors.V)
-#print(obj_network.state_monitors.V.shape) #120 , 1000
-
-#print(obj_network.spike_monitors.i, obj_network.spike_monitors.t/ms) #120 , 1000
-
-#TODO: sistemare unita` di misura`
-
 _, ax = plt.subplots(2,1,figsize=(20,15))
 #lim_time = 50 ms
 FR_neurons = [np.sum(obj_network.spike_monitors.i ==  neuron_idx)/(1e-3*(duration/ms)) for neuron_idx in range(num_neurons)]
