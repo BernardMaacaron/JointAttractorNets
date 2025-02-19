@@ -1,5 +1,8 @@
 from NeuronModels import *
 from brian2 import *
+sys.path.append("Tools")
+from plottingTools import *
+
 
 def neuron_distance(i ,j, N=120):
     # Use np.minimum which is vectorized over arrays.
