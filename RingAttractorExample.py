@@ -5,8 +5,10 @@ from brian2 import *
 
 import sys
 sys.path.append('Neuron and Synapse Models')
+sys.path.append('Tools')
 from NeuronModels import *
 import matplotlib.pyplot as plt
+from plottingTools import *
 
 # %%
 # Parameters
@@ -20,8 +22,9 @@ def gaussian(x, mu, sig):
 
 input_weights = gaussian(np.arange(0,10),5,3) #input object
 
-plt.plot(input_weights)
+#plt.plot(input_weights)
 
+"""
 # %%
 #FEDEs CODE
 
@@ -77,7 +80,76 @@ class Gaussian_Input_Generator:
         input_gen = NeuronGroup(self.n, 'I : 1', threshold='I > 0', reset='I = 0', method='exact')
         input_gen.I = self.generate_cue()
         return input_gen
+"""
+#Code used by Federica to generate her input
+class Gaussian_Input_Generator:
+    def __init__(self,
+                 n,
+                 amp=0,
+                 mu=0,
+                 sigma=1,
+                 noise=False,
+                 normalised=True,
+                 verbose=False):
+        
+        self.n=n
+        self.m=amp  #amplitude
+        self.mu=mu #peak position (preferred direction of the corresponding neuron (theta in gradi))
+        self.sigma=sigma #refers to the certainty of the cue
+        self.noise=noise
+        self.normalised=normalised
+        self.x=np.linspace(0, 360, self.n, endpoint=True)
+        self.y=None  
+        self.verbose = verbose      
+    
+    def generate_cue(self):
+    
+        # Create a wrap based on the number of neurons
+        wraps = np.arange(-self.n/2, self.n/2+1)
+        gaussianComponent = np.exp(-0.5 * ((self.x[:,np.newaxis]-self.mu+wraps*360) /self.sigma)**2)
+        wrappedGaussian = self.m * np.sum(gaussianComponent, axis=1)
+        normalizationTerm=1/(self.sigma*((2*pi)**0.5))
 
+        y=wrappedGaussian
+        
+        if self.noise:
+            y=self.add_noise(y)
+            
+        if self.normalised:
+            y=y*normalizationTerm
+        
+        if self.verbose:
+            for index, (angle, value) in enumerate(zip(self.x, y)):
+                print('Gaussian', index, 'at', angle, 'has value', value)
+            
+            print('The angle should theoretically be', self.mu,
+                '.\nThe peak is at', self.x[np.argmax(y)],
+                '. The respective neuron is', np.argmax(y))
+        self.y = y
+        return y
+    
+    
+    def plot_gaussians_polar(self):
+        # Generate the wrapped Gaussian values
+        gaussian_values = self.generate_cue()
+        
+        plot_on_circle(self.x, gaussian_values, title='Wrapped Gaussian on a Circle',
+                       legend_label='Wrapped Gaussian', legend_kwargs={'loc': 'upper right'})
+        plt.show()
+
+
+    def add_noise(self,I):
+        I_noisy=I+normal(0,1,len(self.x))*2e-2
+        return I_noisy
+    
+    def to_brian2_neuron_group(self):
+        input_gen = NeuronGroup(self.n, 'I : 1', threshold='I > 0', reset='I = 0', method='exact')
+        if self.y is None:
+            input_gen.I = self.generate_cue()
+        else:
+            input_gen.I = self.y
+        return input_gen
+    
 # %%
 from ring_attractor import RingAttractor
 import numpy as np
@@ -86,7 +158,7 @@ import numpy as np
 def gaussian(x, mu, sig):
     return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
-def simulate(duration, plot_states=True): #, input_weights=None, nput_gen=0, ):
+def simulate(duration, plot_states=True, input_dir=180): #, input_weights=None, nput_gen=0, ):
         
         
         #The input generated consists of all the 10 spikes to fire in parallel at t = 0 s
@@ -95,29 +167,30 @@ def simulate(duration, plot_states=True): #, input_weights=None, nput_gen=0, ):
         #     N=10, indices = np.concatenate([4*np.ones(100), 5*np.ones(100)],axis=0), times= np.concatenate([np.linspace(0,20,100), np.linspace(0,20,100)],axis=0)*ms
         # )
         
-        gaussian_gen = Gaussian_Input_Generator(n=120, amp=800, mu=180, sigma=2, noise=False) #m=0.8
+        gaussian_gen = Gaussian_Input_Generator(n=120, amp=800, mu=input_dir, sigma=0.4, noise=False) # the smaller the sigma, the smaller the width of the gaussian and the precision of the recorded bump
+        gaussian_gen.plot_gaussians_polar()
         input_gen = gaussian_gen.to_brian2_neuron_group()
         input_weights = gaussian_gen.generate_cue() #those are too low
         
         # TODO: FIx the weights
-        obj_network = RingAttractor(N=120,wee = 735*10*mV, wei = 3*10*mV, wie = 30*10*mV, wii = 4000*10*mV, V_input=input_weights * mV)
-        #wee = 735*mV, wei = 5*mV, wie = 15*mV, wii = 400*mV
+        obj_network = RingAttractor(N=120,wee = 735*10*mV, wei = 3*10*mV, wie = 30*10*mV, wii = 4000*10*mV) #, V_input=input_weights * mV)
+        #wee = 735*mV, wei = 5*mV, wie = 15*mV, wii = 4000*mV
 
 
-        #connecting_input = Synapses(input_gen, obj_network.excitatory_neurons, model='W_input : volt', name="input_synapses", on_pre="V_post += W_input")
-        #connecting_input.connect(j="i")
-        #connecting_input.W_input[:] = input_weights.flatten() * volt
-        #print(connecting_input.W_input)
-        #print(connecting_input.W_input_)
+        connecting_input = Synapses(input_gen, obj_network.excitatory_neurons, model='W_input : volt', name="input_synapses", on_pre="V_post += W_input")
+        connecting_input.connect(j="i")
+        connecting_input.W_input[:] = input_weights.flatten() * volt
+        print(connecting_input.W_input)
+        print(connecting_input.W_input_)
         
-        #spike_monitor_input = SpikeMonitor(input_gen, name="spike_input")
+        spike_monitor_input = SpikeMonitor(input_gen, name="spike_input")
         
         network = obj_network.net
         print(network)
         
-        #network.add(input_gen)
-        #network.add(connecting_input)
-        #network.add(spike_monitor_input)
+        network.add(input_gen)
+        network.add(connecting_input)
+        network.add(spike_monitor_input)
         
         """
         state_monitors = StateMonitor(obj_network.excitatory_neurons, "V", record=True, name="state_excitatory")
@@ -133,7 +206,7 @@ def simulate(duration, plot_states=True): #, input_weights=None, nput_gen=0, ):
 
         if plot_states:
             fig, ax = plt.subplots(4,1)
-            #ax[0].plot(spike_monitor_input.t/ms, spike_monitor_input.i, '.k', ms=3)
+            ax[0].plot(spike_monitor_input.t/ms, spike_monitor_input.i, '.k', ms=3)
             ax[0].set_xlim(0, duration/ms)
             ax[0].set_ylim(0, obj_network.N)
             ax[0].set_xlabel('Time (ms)')
@@ -170,19 +243,8 @@ if __name__ == "__main__":
     #not caring anymore about the definition of the connectivity related to the 
     # gaussian distribution in the inputs
     #Trying running it without input (no spike, anything)
-    simulate(duration=100*ms, plot_states=True) #, input_gen=input_gen, input_weights=input_weights)
+    simulate(duration=100*ms, plot_states=True, input_dir=60) #, input_gen=input_gen, input_weights=input_weights)
 
-    # %% [markdown]
-    # Ok it seems that:
-    # - the inhibitory conditions are strong enough to regularize the connections, so that the activity doesn`t explode
-    # - but as soon as the input is not applied anymore, the pattern is not kept in memory (the excitatory activity of the neurons instantly shuts down)
-    # - how to keep it??? 
-    # 
-    # HYPOTESIS: increasing the excitatory connections 
-    # - ATTENTION : if we make the weight higher than 500 mV, the activity explodes (but if I also increase wie, it gets better...but still not able to memorize anything).
-    # 
-    # The self connections of the excitatory neurons are supposed to memorize the patterns --> but if the excitatory neurons corresponding to the input keep firing, they will be inhibited by the global inhibition.
-    # 
-    # What if I change the inhibition depending on the intensity of the v???
-
+    #for i in np.arange(0,360,10):
+    #    simulate(duration=100*ms, plot_states=True, input_dir=i) #, input_gen=input_gen, input_weights=input_weights)
 
