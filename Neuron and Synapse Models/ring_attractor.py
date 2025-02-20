@@ -13,15 +13,15 @@ def return_radians_angle(i, N=120):
     return 2*pi*i/N * radian
 
 class RingAttractor():
-    def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000/10*mV, wei = 5/10*mV, wie = 500/10 *mV, wii = 4 /10*mV, sigma=0.4, mode_weights="gaussian"):
+    def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000/10*mV, wei = 5/10*mV, wie = 500/10 *mV, wii = 4 /10*mV, sigma=0.4, mode_weights="gaussian", dt=1*ms):
         #self.Vthr = Vth * mV
         #self.V_reset = V_reset * mV
         #self.V_rest = V_rest * mV
         self.N = N
         self.sigma = sigma
 
-        self.inhibit_neuron = NeuronGroup(1, LIF_eq, threshold = "V > Vth", reset = "V = V_reset", method="euler", name="inhibitory_neurons")
-        self.excitatory_neurons = NeuronGroup(self.N, LIF_eq, threshold = "V > Vth", reset = "V = V_reset", method="euler", name="excitatory_neurons")
+        self.inhibit_neuron = NeuronGroup(1, LIF_eq, threshold = "V > Vth", reset = "V = V_reset", method="euler", name="inhibitory_neurons", dt=dt)
+        self.excitatory_neurons = NeuronGroup(self.N, LIF_eq, threshold = "V > Vth", reset = "V = V_reset", method="euler", name="excitatory_neurons", dt=dt)
         self.inhibit_neuron.V = V_rest
         self.excitatory_neurons.V = V_rest
 
@@ -32,14 +32,16 @@ class RingAttractor():
             self.weights_matrix = wee * np.exp(-np.power(distance_matrix,2)/(2*self.sigma**2))
         elif mode_weights == "cosine":
             self.weights_matrix = "wee * cos(return_radians_angle(i) - return_radians_angle(j))"
- 
-        self.Ring2Inh = Synapses(self.excitatory_neurons, self.inhibit_neuron, "W_ring2inh : volt", name="ring2inh_synapses", on_pre="V_post += W_ring2inh")
 
-        self.Inh2Ring = Synapses(self.inhibit_neuron, self.excitatory_neurons, model="W_inh2ring : volt", name="inh2ring_synapses", on_pre="V_post -= W_inh2ring ") #in this case I want the inhibitory neuron (presynaptic) to inhibit the neuron only if the post synaptic (excitatory) is firing too much
+        #example equation for the synapse (once we introduce the learning I suppose)  'dw/dt = -w / (50*ms): 1 (event-driven)' --> so for now we don`t have any tau_mem`
  
-        self.Inh2Inh = Synapses(self.inhibit_neuron, self.inhibit_neuron, model = "W_inh2inh : volt", name="inh2inh_synapses", on_pre="V_post -= W_inh2inh")
+        self.Ring2Inh = Synapses(self.excitatory_neurons, self.inhibit_neuron, "W_ring2inh : volt", name="ring2inh_synapses", on_pre="V_post += W_ring2inh", dt=dt)
+
+        self.Inh2Ring = Synapses(self.inhibit_neuron, self.excitatory_neurons, model="W_inh2ring : volt", name="inh2ring_synapses", on_pre="V_post -= W_inh2ring ", dt=dt) #in this case I want the inhibitory neuron (presynaptic) to inhibit the neuron only if the post synaptic (excitatory) is firing too much
+ 
+        self.Inh2Inh = Synapses(self.inhibit_neuron, self.inhibit_neuron, model = "W_inh2inh : volt", name="inh2inh_synapses", on_pre="V_post -= W_inh2inh", dt=dt)
         
-        self.Ring2Ring = Synapses(self.excitatory_neurons, self.excitatory_neurons, model="W_ring2ring : volt", name="ring2rings_synapses", on_pre="V_post += W_ring2ring")
+        self.Ring2Ring = Synapses(self.excitatory_neurons, self.excitatory_neurons, model="W_ring2ring : volt", name="ring2rings_synapses", on_pre="V_post += W_ring2ring", dt=dt)
 
         self.Ring2Inh.connect()
         self.Inh2Ring.connect()
