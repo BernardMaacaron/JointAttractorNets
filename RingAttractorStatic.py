@@ -7,7 +7,7 @@ import numpy as np
 
 sys.path.append("Neuron and Synapse Models")
 sys.path.append("Tools")
-from NeuronModels import *
+from neuronModels import *
 from ring_attractor import RingAttractor, Gaussian_Input_Generator
 from plottingTools import *
 

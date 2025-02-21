@@ -1,8 +1,5 @@
-from NeuronModels import *
+from neuronModels import *
 from brian2 import *
-sys.path.append("Tools")
-from plottingTools import *
-
 
 def neuron_distance(i ,j, N=120):
     # Use np.minimum which is vectorized over arrays.
@@ -14,9 +11,6 @@ def return_radians_angle(i, N=120):
 
 class RingAttractor():
     def __init__(self, N =120, Vth=-48 * mV, V_rest=-70 *mV, V_reset=-80 *mV, wee = 1000/10*mV, wei = 5/10*mV, wie = 500/10 *mV, wii = 4 /10*mV, sigma=0.4, mode_weights="gaussian", dt=1*ms):
-        #self.Vthr = Vth * mV
-        #self.V_reset = V_reset * mV
-        #self.V_rest = V_rest * mV
         self.N = N
         self.sigma = sigma
 
@@ -51,15 +45,7 @@ class RingAttractor():
         self.Inh2Ring.W_inh2ring = wie
         self.Inh2Inh.W_inh2inh = wii
         self.Ring2Ring.W_ring2ring[:] = self.weights_matrix.flatten()
-        #visualise_connectivity(self.Ring2Inh, self.Inh2Ring, self.Inh2Inh, self.Ring2Ring)
-
-        #Plotting the connectivity between neurons
-        #visualise_connectivity(self.Ring2Inh)
-        #visualise_connectivity(self.Inh2Ring)
-        #visualise_connectivity(self.Inh2Inh)
-        #visualise_connectivity(self.Ring2Ring)
         
-
         self.net = Network(collect()) #level=1, [self.excitatory_neurons, self.inhibit_neuron, self.Ring2Inh, self.Ring2Ring, self.Inh2Inh, self.Inh2Ring])) #it`s not collecting anything
         self.net.add([self.excitatory_neurons, self.inhibit_neuron, self.Ring2Inh, self.Ring2Ring, self.Inh2Inh, self.Inh2Ring])
 
@@ -71,71 +57,3 @@ class RingAttractor():
         monitors = [self.state_monitors, self.inhibitory_state_monitors, self.spike_monitors, self.inhibitory_spike_monitors]
 
         self.net.add(monitors)
-        
-class Gaussian_Input_Generator:
-    def __init__(self,
-                 n,
-                 amp=0,
-                 mu=0,
-                 sigma=1,
-                 noise=False,
-                 normalised=True,
-                 verbose=False):
-        
-        self.n=n
-        self.m=amp  #amplitude
-        self.mu=mu #peak position (preferred direction of the corresponding neuron (theta in gradi))
-        self.sigma=sigma #refers to the certainty of the cue
-        self.noise=noise
-        self.normalised=normalised
-        self.x=np.linspace(0, 360, self.n, endpoint=True)
-        self.y=None  
-        self.verbose = verbose      
-    
-    def generate_cue(self):
-    
-        # Create a wrap based on the number of neurons
-        wraps = np.arange(-self.n/2, self.n/2+1)
-        gaussianComponent = np.exp(-0.5 * ((self.x[:,np.newaxis]-self.mu+wraps*360) /self.sigma)**2)
-        wrappedGaussian = self.m * np.sum(gaussianComponent, axis=1)
-        normalizationTerm=1/(self.sigma*((2*pi)**0.5))
-
-        y=wrappedGaussian
-        
-        if self.noise:
-            y=self.add_noise(y)
-            
-        if self.normalised:
-            y=y*normalizationTerm
-        
-        if self.verbose:
-            for index, (angle, value) in enumerate(zip(self.x, y)):
-                print('Gaussian', index, 'at', angle, 'has value', value)
-            
-            print('The angle should theoretically be', self.mu,
-                '.\nThe peak is at', self.x[np.argmax(y)],
-                '. The respective neuron is', np.argmax(y))
-        self.y = y
-        return y
-    
-    
-    def plot_gaussians_polar(self):
-        # Generate the wrapped Gaussian values
-        gaussian_values = self.generate_cue()
-        
-        plot_on_circle(self.x, gaussian_values, title='Wrapped Gaussian on a Circle',
-                       legend_label='Wrapped Gaussian', legend_kwargs={'loc': 'upper right'})
-        plt.show()
-
-
-    def add_noise(self,I):
-        I_noisy=I+normal(0,1,len(self.x))*2e-2
-        return I_noisy
-    
-    def to_brian2_neuron_group(self):
-        input_gen = NeuronGroup(self.n, 'I : 1', threshold='I > 0', reset='I = 0', method='exact')
-        if self.y is None:
-            input_gen.I = self.generate_cue()
-        else:
-            input_gen.I = self.y
-        return input_gen

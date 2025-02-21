@@ -7,8 +7,11 @@ import sys
 sys.path.append('Neuron and Synapse Models')
 sys.path.append('Tools')
 from NeuronModels import *
-import matplotlib.pyplot as plt
 from plottingTools import *
+from gaussianGenerator import *
+
+import matplotlib.pyplot as plt
+
 
 # %%
 # Parameters

@@ -4,17 +4,28 @@
 # This is Federica's leaky integrate-and-fire neuron model.
 # The membrane potential is governed by the equation:
 LIF_eq = '''
-dV/dt = (V_rest-V + I/g_leak)/tau_m : volt
+dV/dt = (V_rest-V + I/g_leak)/tau : volt
 I = I_exc + I_inh : amp
 
 I_exc : amp
 I_inh : amp
-tau_m = 5*ms        : second (shared)
+tau = 5*ms        : second (shared)
 
 g_leak = 1*nS       : siemens (shared)
 V_rest = -70*mV     : volt (shared)
 '''
 
+LIF_sim_eq = '''
+dV/dt = (V_rest-V + I/g_leak)/tau : volt
+I = I_exc + I_inh : amp
+
+I_exc : amp
+I_inh : amp
+tau   : second (shared)
+
+g_leak = 1*nS       : siemens (shared)
+V_rest = -70*mV     : volt (shared)
+'''
 
 
 LIFN_eq = '''
