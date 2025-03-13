@@ -40,3 +40,11 @@ C = 250*pF       : farad (shared)
 tau_m = 10*ms      : second (shared)
 E = -70*mV       : volt (shared)
 '''
+
+
+LIF_sim_eq = '''
+dV/dt = (V_rest-V)/tau : volt
+
+tau                 : second (shared)
+V_rest = -70*mV     : volt (shared)
+'''
