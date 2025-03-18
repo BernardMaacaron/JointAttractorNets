@@ -48,3 +48,10 @@ dV/dt = (V_rest-V)/tau : volt
 tau                 : second (shared)
 V_rest = -70*mV     : volt (shared)
 '''
+
+LIF_xi_eq = '''
+dV/dt = (V_rest - V + I_syn + I_ext)/tau + sigma_noise*xi*tau**(-0.5) : volt (unless refractory)
+I_syn : volt
+I_ext : volt
+'''
+        
