@@ -6,8 +6,7 @@ class RingAttractor():
                  neuron_eq, 
                  N=120,
                  Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms,
-                 # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
-                 syn_profile='mexican_hat',
+                 syn_profile='mexican_hat',                  # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
                  autapse=False,
                  **syn_params):
         """
@@ -81,28 +80,6 @@ class RingAttractor():
         
         # END Synapse Definition
         #+-------------------------------------------------------------------+
-        self.BrianObjects = [self.ring_pool, self.synapses]
-
-    
-        # self.Ring2Inh = Synapses(self.excitatory_neurons, self.inhibit_neuron, "W_ring2inh : volt", name="ring2inh_synapses", on_pre="V_post += W_ring2inh", dt=dt)
-        # self.Inh2Ring = Synapses(self.inhibit_neuron, self.excitatory_neurons, model="W_inh2ring : volt", name="inh2ring_synapses", on_pre="V_post -= W_inh2ring ", dt=dt) #in this case I want the inhibitory neuron (presynaptic) to inhibit the neuron only if the post synaptic (excitatory) is firing too much
-        # self.Inh2Inh = Synapses(self.inhibit_neuron, self.inhibit_neuron, model = "W_inh2inh : volt", name="inh2inh_synapses", on_pre="V_post -= W_inh2inh", dt=dt)
-        # self.Ring2Ring = Synapses(self.excitatory_neurons, self.excitatory_neurons, model="W_ring2ring : volt", name="ring2rings_synapses", on_pre="V_post += W_ring2ring", dt=dt)
-
-        # self.Ring2Inh.connect()
-        # self.Inh2Ring.connect()
-        # self.Inh2Inh.connect()
-        # self.Ring2Ring.connect()
-        # self.Ring2Inh.W_ring2inh = wei
-        # self.Inh2Ring.W_inh2ring = wie
-        # self.Inh2Inh.W_inh2inh = wii
-        # self.Ring2Ring.W_ring2ring[:] = self.weights_matrix.flatten()
         
-
-        # self.state_monitors = StateMonitor(self.excitatory_neurons, "V", record=True, name="state_excitatory")
-        # self.spike_monitors = SpikeMonitor(self.excitatory_neurons, name="spike_excitatory")
-        # self.inhibitory_state_monitors = StateMonitor(self.inhibit_neuron, "V", record=True, name="state_inhibitory")
-        # self.inhibitory_spike_monitors = SpikeMonitor(self.inhibit_neuron, name="spike_inhibitory")
-        # monitors = [self.state_monitors, self.inhibitory_state_monitors, self.spike_monitors, self.inhibitory_spike_monitors]
-
-        # self.net.add(monitors)
+        
+        self.BrianObjects = [self.ring_pool, self.synapses]

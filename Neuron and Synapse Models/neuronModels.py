@@ -43,10 +43,11 @@ E = -70*mV       : volt (shared)
 
 
 LIF_sim_eq = '''
-dV/dt = (V_rest-V)/tau : volt
+dV/dt = (V_rest-V + I_ext)/tau : volt
 
 tau                 : second (shared)
 V_rest = -70*mV     : volt (shared)
+I_ext : volt
 '''
 
 LIF_xi_eq = '''
