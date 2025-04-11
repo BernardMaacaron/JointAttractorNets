@@ -42,16 +42,19 @@ def worker_run(params_tuple):
         # run_ring_attractor returns: (stimulus_center, observed_rates, pva_angle, pva_magnitude)
         GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params)
         
+        circular_std = np.sqrt(-2 * np.log(out_pva_magnitude + 1e-8))
+        
         # Compute the center error and confidence weighted center error (CWCE)
         center_err, cwce = conf_weighted_CE(out_pva_angle, GT_center, out_pva_magnitude)
         
         # Compute the NMSE between the observed rates and the ideal Gaussian profile
         nmse = compute_nmse_normalized(out_rates, GT_input, norm_type='max')
         
+        
         # Combine the errors into one composite score.
         # Adjust weights to prioritize center accuracy (here, 70% for CWCE, 30% for NMSE).
-        w_center = 0.7
-        w_nmse = 0.3
+        w_center = 0.1
+        w_nmse = 0.9
         composite_error = w_center * cwce + w_nmse * nmse
         
         return {
@@ -60,10 +63,12 @@ def worker_run(params_tuple):
             'g_exc': g_exc,
             'g_inh': g_inh,
             'center_error': float(center_err),
+            'pva_magnitude': float(out_pva_magnitude),
+            'circular_std': float(circular_std),
             'cwce': float(cwce),
             'nmse': float(nmse),
             'composite_error': float(composite_error),
-            'error_message': pd.NA
+            'error_message': np.nan
         }
     except Exception as e:
         # If an error occurs, capture it for this parameter set.
@@ -72,10 +77,12 @@ def worker_run(params_tuple):
             'sigma_inh': sigma_inh,
             'g_exc': g_exc,
             'g_inh': g_inh,
-            'center_error': pd.NA,
-            'cwce': pd.NA,
-            'nmse': pd.NA,
-            'composite_error': pd.NA,
+            'center_error': np.nan,
+            'pva_magnitude': np.nan,
+            'circular_std': np.nan,
+            'cwce': np.nan,
+            'nmse': np.nan,
+            'composite_error': np.nan,
             'error_message': str(e)  # Capture the error message
         }
 
@@ -101,7 +108,7 @@ if __name__ == '__main__':
     
     if not valid_results.empty:
         # Sort the DataFrame based on composite_error (lower is better).
-        best_result = valid_results.sort_values(by='composite_error', ascending=True).iloc[0]
+        best_result = valid_results.sort_values(by=['circular_std', 'composite_error'], ascending=[True, True]).iloc[0]
         print("Best parameter set found:")
         print(best_result)
     else:

@@ -137,6 +137,11 @@ def compute_nmse_normalized(observed_rates, ideal_input, norm_type='max'):
     Returns:
         float: The computed NMSE.
     """
+    if len(observed_rates) != len(ideal_input):
+        raise ValueError("Observed rates and ideal input must have the same length.")
+    if np.sum(observed_rates) == 0:
+        return np.nan
+    
     if norm_type == 'max':
         normalized_ideal = ideal_input / np.max(ideal_input)
         normalized_obs = observed_rates / np.max(observed_rates)

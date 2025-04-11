@@ -78,8 +78,8 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
 
     # Build the network and run simulation
     net = Network(ringAttractor.BrianObjects + [enforce_lower_bound, spikemon, statemon])
-    input_on = 500*ms
-    input_off = 1*second
+    input_on = 0.5*second
+    input_off = 3*second
     sim_duration = input_on + input_off
     
     net.run(input_on)
