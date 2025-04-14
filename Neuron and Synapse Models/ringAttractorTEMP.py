@@ -3,11 +3,11 @@ from brian2 import *
 
 class RingAttractor():
     def __init__(self, 
-                 neuron_eq, 
-                 N=120,
-                 Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms,
-                 syn_profile='mexican_hat',                  # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
+                 neuron_eq, N=120,
+                 Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms, # Neuron parameters
+                 syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
                  autapse=False,
+                 glob_inh = False, w_inh = -0.15*mV,                 # Global Inhibitory neuron parameters
                  **syn_params):
         """
         Constructs a ring attractor network.
@@ -31,6 +31,8 @@ class RingAttractor():
         self.N = N
         self.syn_profile = syn_profile.lower()
         self.autapse = autapse
+        self.glob_inh = glob_inh
+        self.BrianObjects = []
 
         # Create neuron positions uniformly along the ring [0, 2*pi)
         self.positions = np.linspace(0, 2*pi, N, endpoint=False)
@@ -54,13 +56,11 @@ class RingAttractor():
             g_exc     = syn_params.get('g_exc', 0.1*mV)
             g_inh     = syn_params.get('g_inh', -0.15*mV)
             self.weights_matrix = g_exc * np.exp(-angular_distMat**2/(2*sigma_exc**2)) \
-                                  + g_inh * np.exp(-angular_distMat**2/(2*sigma_inh**2))
-                                  
+                                  + g_inh * np.exp(-angular_distMat**2/(2*sigma_inh**2))                        
         elif self.syn_profile == 'gaussian':
             sigma_gauss = syn_params.get('sigma_gauss', 1.0)
             g_gauss     = syn_params.get('g_gauss', 0.1*mV)
             self.weights_matrix = g_gauss * np.exp(-angular_distMat**2/(2*sigma_gauss**2))
-            
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
             self.weights_matrix = g_cosine * (np.cos(angular_distMat) + 1) / 2
@@ -70,16 +70,35 @@ class RingAttractor():
         # Remove self-connections if autapse is False.
         if not self.autapse:
             np.fill_diagonal(self.weights_matrix, 0)
-
-    
-         # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
-        self.synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
+        
+        # Create a global inhibitory neuron if glob_inh is True.    
+        if self.glob_inh:
+            self.glob_inh_neuron = NeuronGroup(1, neuron_eq, threshold='V > Vth', reset='V = V_reset', refractory=refractory_period,
+                                                method="euler", name="glob_inh_neuron")
+            self.glob_inh_neuron.V = V_reset
+        
+            # Synapses from the global inhibitory neuron to all neurons in the ring.
+            self.glob_inh2pool = Synapses(self.glob_inh_neuron, self.ring_pool, model='w_inh : volt',
+                                              on_pre='I_syn_post += w_inh', name='glob_inh2pool')
+            self.glob_inh2pool.connect()
+            self.glob_inh2pool.w_inh = w_inh
+            
+            # Synapses from the ring neurons to the global inhibitory neuron.
+            self.pool2glob_inh = Synapses(self.ring_pool, self.glob_inh_neuron, model='w_exc : volt',
+                                          on_pre='I_syn_post += w_exc', name='pool2glob_inh')
+            self.pool2glob_inh.connect()
+            self.pool2glob_inh.w_exc = -w_inh # casts the weight to all neurons in the ring
+            
+            self.BrianObjects.extend([self.glob_inh_neuron, self.glob_inh2pool, self.pool2glob_inh])
+            
+        # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
+        self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
                                  on_pre='I_syn_post += w', name='ring_synapses')
-        self.synapses.connect()  
-        self.synapses.w = self.weights_matrix.flatten()
+        self.ring_synapses.connect()  
+        self.ring_synapses.w = self.weights_matrix.flatten()
         
         # END Synapse Definition
         #+-------------------------------------------------------------------+
         
         
-        self.BrianObjects = [self.ring_pool, self.synapses]
+        self.BrianObjects.extend([self.ring_pool, self.ring_synapses])

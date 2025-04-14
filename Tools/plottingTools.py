@@ -262,7 +262,9 @@ def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
 
 def time_resolved_PVA(spikemon, positions, duration, num_neurons, 
                       window_size=50*ms, step_size=10*ms, ax=None,
-                      color_windows=False, cmap_name='viridis'):
+                      color_windows=False, cmap_name='viridis',
+                      stim_periods=None, stim_display_method='highlight',
+                      highlight_alpha=0.2, highlight_color='yellow', lines_style='--'):
     """
     Plot time-resolved population vector average using calculate_PVA from utils and optionally color the windows.
     
@@ -276,6 +278,11 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
         ax (matplotlib axis, optional): Axis to plot on. If None, a new figure is created.
         color_windows (bool): If True, color the computed windows based on time.
         cmap_name (str): Name of the matplotlib colormap to use (if color_windows is True).
+        stim_periods (list of tuples or tuple, optional): List of stimulus periods as (start_time, end_time) tuples or a single tuple.
+        stim_display_method (str, optional): Method to display stimulus periods: 'highlight' or 'lines'
+        highlight_alpha (float, optional): Alpha transparency for highlighted areas (0-1)
+        highlight_color (str or list, optional): Color(s) for highlighting stimulus periods. If a list, colors will cycle for multiple periods.
+        lines_style (str, optional): Line style for vertical lines when using 'lines' method
         
     Returns:
         tuple: (pva_angles, ax) where pva_angles is an array of computed angles.
@@ -312,7 +319,22 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     else:
         ax.scatter(t_windows, pva_angles, s=10, color='blue')
     
-    ax.axvline(duration/2/second, color='r', linestyle='--', label='Stimulus Off')
+    # Incorporate stim_periods visualization
+    if stim_periods is not None:
+        if not isinstance(stim_periods[0], (list, tuple)):
+            stim_periods = [stim_periods]
+        if isinstance(highlight_color, str):
+            highlight_color = [highlight_color] * len(stim_periods)
+        if len(highlight_color) < len(stim_periods):
+            highlight_color = highlight_color * (len(stim_periods) // len(highlight_color) + 1)
+        for i, (start, end) in enumerate(stim_periods):
+            color = highlight_color[i % len(highlight_color)]
+            if stim_display_method == 'highlight':
+                ax.axvspan(start/second, end/second, alpha=highlight_alpha, color=color)
+            elif stim_display_method == 'lines':
+                ax.axvline(start/second, color=color, linestyle=lines_style)
+                ax.axvline(end/second, color=color, linestyle=lines_style)
+    
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Decoded angle (rad)')
     ax.set_ylim(0, 2*np.pi)
@@ -321,7 +343,10 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     
     return pva_angles, ax
 
-def membrane_potential_traces(statemon, duration, num_neurons=5, ax=None):
+def membrane_potential_traces(statemon, duration, Vth = None,
+                              stim_periods=None, stim_display_method='highlight',
+                              highlight_alpha=0.2, highlight_color='yellow', lines_style='--', num_neurons=5, ax=None):
+    
     """Plot membrane potential traces for a subset of neurons
     
     Parameters:
@@ -330,6 +355,20 @@ def membrane_potential_traces(statemon, duration, num_neurons=5, ax=None):
         Monitor containing membrane potential data
     duration : Brian2 Quantity
         Total simulation duration
+    stim_periods : list of tuples or tuple, optional
+        List of stimulus periods as (start_time, end_time) tuples or a single tuple.
+        Time values should be Brian2 Quantity objects.
+        If None, no stimulus will be visualized.
+    stim_display_method : str, optional
+        Method to display stimulus periods: 'highlight' or 'lines'
+        'highlight' - highlight the stimulus period with a colored background
+        'lines' - use vertical lines to mark start and end of each stimulus period
+    highlight_alpha : float, optional
+        Alpha transparency for highlighted areas (0-1)
+    highlight_color : str or list, optional
+        Color(s) for highlighting stimulus periods. If a list, colors will cycle for multiple periods.
+    lines_style : str, optional
+        Line style for vertical lines when using 'lines' method
     num_neurons : int, optional
         Number of neurons to plot
     ax : matplotlib axis, optional
@@ -340,6 +379,7 @@ def membrane_potential_traces(statemon, duration, num_neurons=5, ax=None):
     ax : matplotlib axis
         The axis with the plot
     """
+    
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
@@ -348,7 +388,24 @@ def membrane_potential_traces(statemon, duration, num_neurons=5, ax=None):
     for i in range(0, len(statemon.V), step)[:num_neurons]:
         ax.plot(statemon.t/second, statemon.V[i]/mV, label=f'Neuron {i}')
     
-    ax.axvline(duration/2/second, color='r', linestyle='--', label='Stimulus Off')
+    # Incorporate stim_periods visualization
+    if stim_periods is not None:
+        if not isinstance(stim_periods[0], (list, tuple)):
+            stim_periods = [stim_periods]
+        if isinstance(highlight_color, str):
+            highlight_color = [highlight_color] * len(stim_periods)
+        if len(highlight_color) < len(stim_periods):
+            highlight_color = highlight_color * (len(stim_periods) // len(highlight_color) + 1)
+        for i, (start, end) in enumerate(stim_periods):
+            color = highlight_color[i % len(highlight_color)]
+            if stim_display_method == 'highlight':
+                ax.axvspan(start/second, end/second, alpha=highlight_alpha, color=color)
+            elif stim_display_method == 'lines':
+                ax.axvline(start/second, color=color, linestyle=lines_style)
+                ax.axvline(end/second, color=color, linestyle=lines_style)
+    
+    if Vth is not None:
+        ax.axhline(Vth/mV, color='red', linestyle='--', label='Threshold')
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Membrane potential (mV)')
     ax.set_title('Membrane Potentials')
