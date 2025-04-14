@@ -44,7 +44,7 @@ class RingAttractor():
         rows, cols = np.indices((N, N))
         index_distMat = np.minimum(np.abs(rows - cols), N - np.abs(rows - cols))
         angular_distMat = index_distMat * 2 * pi / N
-        
+                
         
         # Synapse Definition
         #+-------------------------------------------------------------------+
@@ -63,7 +63,7 @@ class RingAttractor():
             self.weights_matrix = g_gauss * np.exp(-angular_distMat**2/(2*sigma_gauss**2))
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
-            self.weights_matrix = g_cosine * (np.cos(angular_distMat) + 1) / 2
+            self.weights_matrix = g_cosine * np.cos(angular_distMat)
         else:
             raise ValueError("Unsupported syn_profile. Choose 'mexican_hat', 'gaussian', or 'cosine'.")
         

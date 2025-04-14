@@ -58,7 +58,10 @@ def plot_on_circle(x, y,
     # Plot with or without a legend label
     if legend_label:
         ax.plot(theta, y, label=legend_label, **line_kwargs)
-        ax.legend(**legend_kwargs)
+        # Conditionally add legend only if legend handles exist.
+        handles, labels = ax.get_legend_handles_labels()
+        if handles:
+            ax.legend(**legend_kwargs)
     else:
         ax.plot(theta, y, **line_kwargs)
     
@@ -220,7 +223,10 @@ def firing_rate_profile(spikemon, positions, duration, ax=None):
     ax.set_xlabel('Position (radians)')
     ax.set_ylabel('Firing rate (Hz)')
     ax.set_title('Firing Rate Profile')
-    ax.legend()
+    # Conditionally add legend only if there are legend entries.
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend()
     
     return firing_rate, ax
 
@@ -256,7 +262,10 @@ def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
              color='r', label='PVA', alpha=0.9, length_includes_head=True)
     
     ax.set_rlim(0, pva_magnitude*scale_factor)
-    ax.legend(loc='upper right')
+    # Conditionally add legend only if there are legend entries.
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend(loc='upper right')
     
     return ax
 
@@ -339,7 +348,10 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     ax.set_ylabel('Decoded angle (rad)')
     ax.set_ylim(0, 2*np.pi)
     ax.set_title('Time-Resolved Population Vector Average (PVA)')
-    ax.legend()
+    # Conditionally add legend only if there are legend entries.
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend()
     
     return pva_angles, ax
 
@@ -409,6 +421,9 @@ def membrane_potential_traces(statemon, duration, Vth = None,
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Membrane potential (mV)')
     ax.set_title('Membrane Potentials')
-    ax.legend()
+    # Conditionally add legend only if there are legend entries.
+    handles, labels = ax.get_legend_handles_labels()
+    if handles:
+        ax.legend()
     
     return ax
