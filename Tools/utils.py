@@ -91,6 +91,27 @@ def calculate_PVA(firing_rates, positions):
     pva_magnitude = np.abs(weighted_sum) / total_rate
     return pva_angle, pva_magnitude
 
+def calculate_ISI(spikemon, n_neurons):
+    """
+    Calculate the Inter-Spike Intervals (ISI) for each neuron.
+
+    Parameters:
+        spikemon : Brian2 SpikeMonitor
+            Monitor containing spike data.
+        n_neurons : int
+            Number of neurons in the network.
+
+    Returns:
+        list of numpy.ndarray
+            List containing ISI arrays for each neuron.
+    """
+    isi_list = []
+    for i in range(n_neurons):
+        neuron_spikes = spikemon.t[spikemon.i == i]
+        isi = np.diff(neuron_spikes) / second  # Convert to seconds
+        isi_list.append(isi)
+    return isi_list
+
 
 #################################################
 # Error Metrics

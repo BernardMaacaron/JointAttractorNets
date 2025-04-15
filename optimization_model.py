@@ -62,7 +62,7 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
                      num_neurons, 
                      Vth, V_reset, refractory_period,
                      syn_profile='mexican_hat',
-                     autapse=True,
+                     autapse=False,
                      sigma_exc=sigma_exc, sigma_inh=sigma_inh, 
                      g_exc=g_exc, g_inh=g_inh)
     ringAttractor.ring_pool.I_ext = I_ext_array
@@ -79,14 +79,17 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     # Build the network and run simulation
     net = Network(ringAttractor.BrianObjects + [enforce_lower_bound, spikemon, statemon])
     input_on = 0.5*second
-    input_off = 3*second
+    input_off = 0.2*second
     sim_duration = input_on + input_off
     
     net.run(input_on)
     ringAttractor.ring_pool.I_ext = I_ext_array * 0  # turn off input in second half
     net.run(input_off)
     
-    firing_rates = compute_firing_rate(spikemon, num_neurons, start_time=0.95*sim_duration, end_time=sim_duration)
+    firing_rates = compute_firing_rate(spikemon, num_neurons,
+                                       start_time=input_on, end_time=sim_duration)
+                                    #    start_time=0.95*sim_duration, end_time=sim_duration)
+                                    
     pva_angle, pva_magnitude = calculate_PVA(firing_rates, positions)
     
     # Return simulation results

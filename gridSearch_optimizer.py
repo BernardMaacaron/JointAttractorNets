@@ -34,28 +34,38 @@ def worker_run(params_tuple):
     sigma_exc, sigma_inh, g_exc, g_inh = params_tuple
     # Build the full parameter dictionary. tau and sigma_noise are fixed.
     params = fixed_params.copy()
-    params.update({'sigma_exc': sigma_exc,'sigma_inh': sigma_inh,
-                   'g_exc': g_exc,'g_inh': g_inh})
+    params.update({
+        'sigma_exc': sigma_exc,
+        'sigma_inh': sigma_inh,
+        'g_exc': g_exc,
+        'g_inh': g_inh
+    })
     
     try:
         # Run the simulation.
-        # run_ring_attractor returns: (stimulus_center, observed_rates, pva_angle, pva_magnitude)
+        # opt_ring_attractor returns: (GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude)
         GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params)
         
+        # Compute the circular standard deviation (spread) from the PVA magnitude.
         circular_std = np.sqrt(-2 * np.log(out_pva_magnitude + 1e-8))
         
-        # Compute the center error and confidence weighted center error (CWCE)
+        # Compute the center error and the confidence weighted center error (CWCE).
         center_err, cwce = conf_weighted_CE(out_pva_angle, GT_center, out_pva_magnitude)
         
-        # Compute the NMSE between the observed rates and the ideal Gaussian profile
+        # Compute the angular Z-score:
+        # This expresses the misalignment (center_err) in units of the circular standard deviation,
+        # analogous to a z-score in linear statistics.
+        angular_Zscore = center_err / circular_std
+        
+        # Compute the NMSE between the observed firing rates and the ideal Gaussian profile.
         nmse = compute_nmse_normalized(out_rates, GT_input, norm_type='max')
         
-        
         # Combine the errors into one composite score.
-        # Adjust weights to prioritize center accuracy (here, 70% for CWCE, 30% for NMSE).
-        w_center = 0.1
-        w_nmse = 0.9
-        composite_error = w_center * cwce + w_nmse * nmse
+        # Adjust weights to prioritize center accuracy if desired (here 50% for center error, 50% for NMSE).
+        w_center = 0.3
+        w_Zscore = 0.2
+        w_nmse = 0.5
+        composite_error = w_center * cwce + w_Zscore * angular_Zscore + w_nmse * nmse
         
         return {
             'sigma_exc': sigma_exc,
@@ -66,6 +76,7 @@ def worker_run(params_tuple):
             'pva_magnitude': float(out_pva_magnitude),
             'circular_std': float(circular_std),
             'cwce': float(cwce),
+            'angular_Zscore': float(angular_Zscore),
             'nmse': float(nmse),
             'composite_error': float(composite_error),
             'error_message': np.nan
@@ -81,9 +92,10 @@ def worker_run(params_tuple):
             'pva_magnitude': np.nan,
             'circular_std': np.nan,
             'cwce': np.nan,
+            'angular_Zscore': np.nan,
             'nmse': np.nan,
             'composite_error': np.nan,
-            'error_message': str(e)  # Capture the error message
+            'error_message': str(e)
         }
 
 if __name__ == '__main__':
@@ -107,9 +119,10 @@ if __name__ == '__main__':
     valid_results = results_df[~results_df['composite_error'].isna()]
     
     if not valid_results.empty:
+        sortBy = 'composite_error'
         # Sort the DataFrame based on composite_error (lower is better).
-        best_result = valid_results.sort_values(by=['circular_std', 'composite_error'], ascending=[True, True]).iloc[0]
-        print("Best parameter set found:")
+        best_result = valid_results.sort_values(by=[sortBy], ascending=[True]).iloc[0]
+        print("Best parameter set found sorted by " + sortBy + ":")
         print(best_result)
     else:
         print("No valid simulation results found.")
