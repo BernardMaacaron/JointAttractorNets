@@ -1,5 +1,7 @@
 from brian2 import *
 import sys
+from lmfit import Model, Parameters
+
 
 class ProgressBar(object):
     def __init__(self, toolbar_width=40):
@@ -42,7 +44,7 @@ def compute_firing_rate(spikemon, n_neurons, start_time=None, end_time=None, tot
             Array of firing rates (Hz) for each neuron.
     """
     # Check if the spike monitor is empty
-    if len(spikemon.t) == 0:
+    if len(spikemon.t) == 0.0:
         return np.zeros(n_neurons)
         
     spike_times = spikemon.t/second
@@ -56,7 +58,7 @@ def compute_firing_rate(spikemon, n_neurons, start_time=None, end_time=None, tot
     else:
         filtered_indices = spike_indices
         if total_duration is not None:
-            duration_used = total_duration
+            duration_used = total_duration/second
         elif len(spike_times) > 0:
             duration_used = np.max(spike_times)
     
@@ -176,3 +178,21 @@ def compute_nmse_normalized(observed_rates, ideal_input, norm_type='max'):
     denominator = np.sum(normalized_ideal ** 2)
     nmse = numerator / denominator
     return nmse
+
+
+#################################################
+# Curve Fitting
+#################################################
+def rect_power(V, a, V0, p):
+    """Rectified power-law: φ(V) = max(a*V - V0, 0)**p"""
+    return np.maximum(a*V - V0, 0.0)**p
+
+
+def curveFit_rectPower(firing_rates, input_data, V0=None):
+    mod = Model(rect_power, independent_vars=['V'])
+    params = Parameters()
+    params.add('a', value=1.0, min=0)       # gain must be ≥0
+    params.add('V0', value=V0)           # threshold in volts
+    params.add('p', value=1.0, vary=False)       # exponent must be ≥0
+    result = mod.fit(firing_rates, params, V=input_data)
+    return result, result.best_values
