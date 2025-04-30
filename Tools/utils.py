@@ -184,9 +184,14 @@ def compute_nmse_normalized(observed_rates, ideal_input, norm_type='max'):
 # Curve Fitting
 #################################################
 def rect_power(V, a, V0, p):
-    """Rectified power-law: φ(V) = max(a*V - V0, 0)**p"""
+    """Rectified power-law: phi(V) = max(a*V - V0, 0)**p"""
     return np.maximum(a*V - V0, 0.0)**p
 
+def rect_powerInt(V, a, V0, p):
+    """Integral of the activation function (rect_power)
+    Phi(V) = (a/1+p)*(V - V0/a)**(p+1)"""
+    power = p+1
+    return (a/power)*np.maximum((V - V0/a),0.0)**(power)
 
 def curveFit_rectPower(firing_rates, input_data, V0=None):
     mod = Model(rect_power, independent_vars=['V'])

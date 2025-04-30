@@ -64,6 +64,8 @@ class RingAttractor():
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
             self.weights_matrix = g_cosine * np.cos(angular_distMat)
+            g_sine = 1.0*mV
+            self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
         else:
             raise ValueError("Unsupported syn_profile. Choose 'mexican_hat', 'gaussian', or 'cosine'.")
         
@@ -96,6 +98,15 @@ class RingAttractor():
                                  on_pre='I_syn_post += w', name='ring_synapses')
         self.ring_synapses.connect()  
         self.ring_synapses.w = self.weights_matrix.flatten()
+        
+        if self.syn_profile == 'cosine':
+            self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
+                                               model='''vel_in : volt
+                                               w_asym : volt''',
+                                 on_pre='I_syn_post += vel_in*w_asym', name='ring_synapses_asym')
+            self.ring_synapses_asym.connect()
+            self.ring_synapses_asym.w_asym = self.weights_matrix_asym.flatten()
+            self.BrianObjects.append(self.ring_synapses_asym)
         
         # END Synapse Definition
         #+-------------------------------------------------------------------+
