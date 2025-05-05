@@ -1,0 +1,23 @@
+﻿details
+=======
+
+.. automodule:: details
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

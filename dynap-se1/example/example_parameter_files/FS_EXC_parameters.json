@@ -1,0 +1,2804 @@
+{
+    "parameters": [
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 0,
+            "core": 0,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 0,
+            "core": 1,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 0,
+            "core": 2,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 0,
+            "core": 3,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 1,
+            "core": 0,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 1,
+            "core": 1,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 1,
+            "core": 2,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 1,
+            "core": 3,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 2,
+            "core": 0,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 2,
+            "core": 1,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 2,
+            "core": 2,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 2,
+            "core": 3,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 3,
+            "core": 0,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 3,
+            "core": 1,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 3,
+            "core": 2,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_AHTAU_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_AHTHR_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_AHW_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_BUF_P",
+            "coarse_value": 3,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_CASC_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_DC_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_NMDA_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_RFR_N",
+            "coarse_value": 4,
+            "fine_value": 128
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_TAU1_N",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_TAU2_N",
+            "coarse_value": 7,
+            "fine_value": 255
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "IF_THR_N",
+            "coarse_value": 5,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPIE_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPIE_THR_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_F_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPII_TAU_S_P",
+            "coarse_value": 4,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_F_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "NPDPII_THR_S_P",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_F_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_EXC_S_N",
+            "coarse_value": 7,
+            "fine_value": 80
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_F_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "PS_WEIGHT_INH_S_N",
+            "coarse_value": 0,
+            "fine_value": 0
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "PULSE_PWLK_P",
+            "coarse_value": 4,
+            "fine_value": 106
+        },
+        {
+            "chip": 3,
+            "core": 3,
+            "parameter_name": "R2R_P",
+            "coarse_value": 3,
+            "fine_value": 85
+        }
+    ]
+}

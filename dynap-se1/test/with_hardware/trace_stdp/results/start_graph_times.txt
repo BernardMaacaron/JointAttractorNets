@@ -1,0 +1,4 @@
+Unit: micsec. List all rounds that take longer than 10 millisec.
+No.: num_traces, single_duration, average_single_duration
+pre 24,2764648808,2764830609,181801; post 19,2764776464,2764898780,122316|295924,295924
+pre 50,2764833127,2765129714,296587; post 39,2764903863,2765129346,225483|8118,152021

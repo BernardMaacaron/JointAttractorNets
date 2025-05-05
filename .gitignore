@@ -169,4 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-optimization_results.csv
+
+__pycache__
+build
+*.log
+*.ini
+samna_info.json
