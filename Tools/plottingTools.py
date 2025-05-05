@@ -112,7 +112,8 @@ def visualise_connectivity(Synapses):
     ylabel('Target neuron index')
 
 def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highlight',
-                highlight_alpha=0.2, highlight_color='yellow', lines_style='--', duration=None):
+                highlight_alpha=0.2, highlight_color='yellow', lines_style='--', duration=None,
+                num_neurons = 120, y_axisFull=False):
     """Create a raster plot of spike times with optional stimulus visualization
     
     Parameters:
@@ -177,6 +178,9 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     # Set x-axis limit if duration is provided
     if duration is not None:
         ax.set_xlim(0, duration/second)
+    
+    if y_axisFull:
+        ax.set_ylim(-1, num_neurons)
     
     # Set labels and title
     ax.set_xlabel('Time (s)')

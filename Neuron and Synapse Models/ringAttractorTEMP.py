@@ -2,7 +2,7 @@ from neuronModels import *
 from brian2 import *
 
 class RingAttractor():
-    def __init__(self, 
+    def __init__(self,
                  neuron_eq, N=120,
                  Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms, # Neuron parameters
                  syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
@@ -32,6 +32,7 @@ class RingAttractor():
         self.syn_profile = syn_profile.lower()
         self.autapse = autapse
         self.glob_inh = glob_inh
+        self.w_inh = w_inh
         self.BrianObjects = []
 
         # Create neuron positions uniformly along the ring [0, 2*pi)
@@ -64,8 +65,9 @@ class RingAttractor():
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
             self.weights_matrix = g_cosine * np.cos(angular_distMat)
-            g_sine = 1.0*mV
-            self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
+            # g_sine = 1.0*mV
+            # self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
+            self.weights_matrix_asym = np.sin(angular_distMat)
         else:
             raise ValueError("Unsupported syn_profile. Choose 'mexican_hat', 'gaussian', or 'cosine'.")
         
@@ -83,13 +85,13 @@ class RingAttractor():
             self.glob_inh2pool = Synapses(self.glob_inh_neuron, self.ring_pool, model='w_inh : volt',
                                               on_pre='I_syn_post += w_inh', name='glob_inh2pool')
             self.glob_inh2pool.connect()
-            self.glob_inh2pool.w_inh = w_inh
+            self.glob_inh2pool.w_inh = self.w_inh
             
             # Synapses from the ring neurons to the global inhibitory neuron.
             self.pool2glob_inh = Synapses(self.ring_pool, self.glob_inh_neuron, model='w_exc : volt',
                                           on_pre='I_syn_post += w_exc', name='pool2glob_inh')
             self.pool2glob_inh.connect()
-            self.pool2glob_inh.w_exc = -w_inh # casts the weight to all neurons in the ring
+            self.pool2glob_inh.w_exc = -self.w_inh # casts the weight to all neurons in the ring
             
             self.BrianObjects.extend([self.glob_inh_neuron, self.glob_inh2pool, self.pool2glob_inh])
             
@@ -99,14 +101,16 @@ class RingAttractor():
         self.ring_synapses.connect()  
         self.ring_synapses.w = self.weights_matrix.flatten()
         
-        if self.syn_profile == 'cosine':
-            self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
-                                               model='''vel_in : volt
-                                               w_asym : volt''',
-                                 on_pre='I_syn_post += vel_in*w_asym', name='ring_synapses_asym')
-            self.ring_synapses_asym.connect()
-            self.ring_synapses_asym.w_asym = self.weights_matrix_asym.flatten()
-            self.BrianObjects.append(self.ring_synapses_asym)
+        
+        # if self.syn_profile == 'cosine':
+        #     self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
+        #                                        model='''vel_in : 1
+        #                                        w_asym : volt''',
+        #                          on_pre='I_syn_post += vel_in*w_asym', name='ring_synapses_asym')
+        #     self.ring_synapses_asym.connect()
+        #     self.ring_synapses_asym.w_asym = self.weights_matrix_asym.flatten()
+        #     self.ring_synapses_asym.vel_in = 0.0
+        #     self.BrianObjects.append(self.ring_synapses_asym)
         
         # END Synapse Definition
         #+-------------------------------------------------------------------+

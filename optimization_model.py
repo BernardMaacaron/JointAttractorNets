@@ -51,20 +51,11 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     V_reset = -80*mV
     refractory_period = 5*ms
 
-    # Connectivity parameters (use parameters if provided or defaults)
-    sigma_exc = params.get('sigma_exc', 0.1)
-    sigma_inh = params.get('sigma_inh', 0.164)
-    g_exc = params.get('g_exc', 0.7848)*mV
-    g_inh = params.get('g_inh', -0.5456)*mV
-
-    # Create the ring attractor network
+    # Create the ring attractor with prepared parameters
     ringAttractor = RingAttractor(neuron_eq, 
                      num_neurons, 
                      Vth, V_reset, refractory_period,
-                     syn_profile='mexican_hat',
-                     autapse=False,
-                     sigma_exc=sigma_exc, sigma_inh=sigma_inh, 
-                     g_exc=g_exc, g_inh=g_inh)
+                     **params)
     ringAttractor.ring_pool.I_ext = I_ext_array
 
     # Clipping operation: enforce lower bound
@@ -75,9 +66,17 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     # Set up monitors
     spikemon = SpikeMonitor(ringAttractor.ring_pool)
     statemon = StateMonitor(ringAttractor.ring_pool, 'V', record=True)
+    
+    # Additional monitor for global inhibitory neuron if it exists
+    if params.get('syn_profile', 'mexican_hat') == 'cosine' and params.get('glob_inh', False):
+        spikemon_inh = SpikeMonitor(ringAttractor.glob_inh_neuron)
+        statemon_inh = StateMonitor(ringAttractor.glob_inh_neuron, 'V', record=True)
+        monitors = [enforce_lower_bound, spikemon, statemon, spikemon_inh, statemon_inh]
+    else:
+        monitors = [enforce_lower_bound, spikemon, statemon]
 
     # Build the network and run simulation
-    net = Network(ringAttractor.BrianObjects + [enforce_lower_bound, spikemon, statemon])
+    net = Network(ringAttractor.BrianObjects + monitors)
     input_on = 0.5*second
     input_off = 0.2*second
     sim_duration = input_on + input_off
@@ -104,4 +103,3 @@ if __name__ == '__main__':
     print("Observed Firing Rates:", out_rates)
     print("PVA Angle:", out_pva_angle)
     print("PVA Magnitude:", out_pva_magnitude)
-    
