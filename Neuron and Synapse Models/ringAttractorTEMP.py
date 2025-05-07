@@ -65,15 +65,17 @@ class RingAttractor():
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
             self.weights_matrix = g_cosine * np.cos(angular_distMat)
-            # g_sine = 1.0*mV
-            # self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
-            self.weights_matrix_asym = np.sin(angular_distMat)
+            g_sine = 1.0*mV
+            self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
+            
         else:
             raise ValueError("Unsupported syn_profile. Choose 'mexican_hat', 'gaussian', or 'cosine'.")
         
         # Remove self-connections if autapse is False.
         if not self.autapse:
             np.fill_diagonal(self.weights_matrix, 0)
+            if self.syn_profile == 'cosine':
+                np.fill_diagonal(self.weights_matrix_asym, 0)
         
         # Create a global inhibitory neuron if glob_inh is True.    
         if self.glob_inh:
@@ -97,20 +99,20 @@ class RingAttractor():
             
         # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
         self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
-                                 on_pre='I_syn_post += w', name='ring_synapses')
+                                on_pre='I_syn_post += w', name='ring_synapses')
         self.ring_synapses.connect()  
-        self.ring_synapses.w = self.weights_matrix.flatten()
+        self.ring_synapses.w[:] = self.weights_matrix.flatten()
         
         
-        # if self.syn_profile == 'cosine':
-        #     self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
-        #                                        model='''vel_in : 1
-        #                                        w_asym : volt''',
-        #                          on_pre='I_syn_post += vel_in*w_asym', name='ring_synapses_asym')
-        #     self.ring_synapses_asym.connect()
-        #     self.ring_synapses_asym.w_asym = self.weights_matrix_asym.flatten()
-        #     self.ring_synapses_asym.vel_in = 0.0
-        #     self.BrianObjects.append(self.ring_synapses_asym)
+        if self.syn_profile == 'cosine':
+            self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
+                                               model='''vel_in : 1 (shared)
+                                                        w_asym : volt''',
+                                        on_pre='I_vel_post += vel_in*w_asym', name='ring_synapses_asym')
+            self.ring_synapses_asym.connect()
+            self.ring_synapses_asym.w_asym[:] = self.weights_matrix_asym.flatten()
+            self.ring_synapses_asym.vel_in = 0.0
+            self.BrianObjects.append(self.ring_synapses_asym)
         
         # END Synapse Definition
         #+-------------------------------------------------------------------+
