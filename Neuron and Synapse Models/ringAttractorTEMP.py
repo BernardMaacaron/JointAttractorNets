@@ -65,7 +65,7 @@ class RingAttractor():
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
             self.weights_matrix = g_cosine * np.cos(angular_distMat)
-            g_sine = 1.0*mV
+            g_sine = 0.1*mV
             self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
             
         else:
@@ -101,7 +101,8 @@ class RingAttractor():
         self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
                                 on_pre='I_syn_post += w', name='ring_synapses')
         self.ring_synapses.connect()  
-        self.ring_synapses.w[:] = self.weights_matrix.flatten()
+        # self.ring_synapses.w[:] = self.weights_matrix.flatten()
+        self.ring_synapses.w = 'g_cosine * cos(theta_pre - theta_post)' # g_cosine is a shared variable
         
         
         if self.syn_profile == 'cosine':
@@ -110,7 +111,8 @@ class RingAttractor():
                                                         w_asym : volt''',
                                         on_pre='I_vel_post += vel_in*w_asym', name='ring_synapses_asym')
             self.ring_synapses_asym.connect()
-            self.ring_synapses_asym.w_asym[:] = self.weights_matrix_asym.flatten()
+            # self.ring_synapses_asym.w_asym[:] = self.weights_matrix_asym.flatten()
+            self.ring_synapses_asym.w_asym = 'g_sine * sin(theta_pre - theta_post)' #  is a shared variable
             self.ring_synapses_asym.vel_in = 0.0
             self.BrianObjects.append(self.ring_synapses_asym)
         

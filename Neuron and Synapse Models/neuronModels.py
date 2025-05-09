@@ -61,4 +61,5 @@ dV/dt = (V_rest - V + I_syn + I_ext + I_vel)/tau + sigma_noise*xi*tau**(-0.5) : 
 I_syn : volt
 I_ext : volt
 I_vel : volt
+theta = 2*pi*i/N : 1
 '''    
