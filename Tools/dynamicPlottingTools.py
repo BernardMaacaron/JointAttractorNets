@@ -2,8 +2,8 @@
 # Dynamic Plotting Classes   #
 ##############################
 
-import threading
-import time
+# import threading
+# import time
 from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ from utils import calculate_PVA
 class DynamicPlot:
     """Base class for all dynamic plots"""
     
-    def __init__(self, fig=None, ax=None, update_interval=100):
+    def __init__(self, fig=None, ax=None, update_interval=100, time_unit=1.0):
         """
         Initialize the base dynamic plot.
         
@@ -26,11 +26,14 @@ class DynamicPlot:
             Axis to plot on. If None, a new axis will be created
         update_interval : int
             Refresh interval in milliseconds
+        time_unit : float
+            Conversion factor to seconds for non-Brian time values (default=1.0 assumes seconds)
         """
         self.fig = fig
         self.ax = ax
         self.update_interval = update_interval
         self.animation = None
+        self.time_unit = time_unit
         
     def setup(self):
         """Set up the plot (to be implemented by subclasses)"""
@@ -46,9 +49,10 @@ class DynamicPlot:
         """Start the animation"""
         if self.ax is None:
             self.setup()
-        self.animation = FuncAnimation(
-            self.fig, self.update, interval=self.update_interval, blit=True
-        )
+        
+        self.animation = FuncAnimation(self.fig, self.update,
+                               interval=self.update_interval, blit=True)
+
         return self.animation
         
     def stop(self):
@@ -56,12 +60,11 @@ class DynamicPlot:
         if self.animation:
             self.animation.event_source.stop()
 
-
 class DynamicRasterPlot(DynamicPlot):
     """Dynamic raster plot that updates in real-time"""
     
     def __init__(self, data_buffer, positions=None, num_neurons=10, 
-                 max_points=5000, duration_window=None, **kwargs):
+                 max_points=5000, duration_window=None, time_unit=1.0, **kwargs):
         """
         Initialize the dynamic raster plot.
         
@@ -77,8 +80,10 @@ class DynamicRasterPlot(DynamicPlot):
             Maximum number of points to display at once (for performance)
         duration_window : float, optional
             Time window to display (in seconds). If None, will show all data.
+        time_unit : float
+            Conversion factor to seconds for non-Brian time values (default=1.0 assumes seconds)
         """
-        super().__init__(**kwargs)
+        super().__init__(time_unit=time_unit, **kwargs)
         self.data_buffer = data_buffer
         self.positions = positions
         self.num_neurons = num_neurons
@@ -92,6 +97,7 @@ class DynamicRasterPlot(DynamicPlot):
         
         # Initialize empty scatter plot
         self.scatter = self.ax.scatter([], [], s=2, color='k')
+        self.scatter.set_animated(True)
         
         # Set initial plot properties
         self.ax.set_xlabel('Time (s)')
@@ -104,30 +110,45 @@ class DynamicRasterPlot(DynamicPlot):
     def update(self, frame):
         """Update the raster plot with new data"""
         try:
-            spike_times = []
-            spike_ids = []
-            
+            spike_times_all = []
+            spike_ids_all = []
             # Extract data from buffer
             for spikes in self.data_buffer:
                 if len(spikes) == 2:  # Ensure tuple contains (ids, times)
                     ids, times = spikes
-                    if hasattr(times, 'dimensionality'):  # Handle Brian2 quantities
-                        times = times/second
-                    spike_ids.extend(ids)
-                    spike_times.extend(times)
+            #         # Convert to seconds if needed
+            #         if hasattr(times, 'dimensionality'):  # Handle Brian2 quantities
+            #             times = times/second
+            #         else:
+            #             # Apply custom unit conversion for non-Brian data
+            #             times = np.asarray(times) * self.time_unit
+                        
+                    # Collect all spike data
+                    spike_ids_all.extend(ids)
+                    spike_times_all.extend(times)
             
-            # Limit to max_points for performance
-            if len(spike_times) > self.max_points:
-                spike_times = spike_times[-self.max_points:]
-                spike_ids = spike_ids[-self.max_points:]
+            #     # Convert to arrays for plotting
+            #     spike_times_all = np.array(ids)
+            #     spike_ids_all = np.array(times)
+            # order = np.argsort(spike_times_all)
+            # spike_times_all = spike_times_all[order]
+            # spike_ids_all = spike_ids_all[order]
             
-            # Update time window if specified
-            if self.duration_window is not None and spike_times:
-                current_time = max(spike_times)
-                self.ax.set_xlim(max(0, current_time - self.duration_window), current_time + 0.05)
             
             # Update scatter plot data
-            self.scatter.set_offsets(np.column_stack([spike_times, spike_ids]))
+            if len(spike_times_all) > 0:
+                # Limit to max_points for performance
+                if len(spike_times_all) > self.max_points:
+                    # Keep the most recent spikes
+                    spike_times_all = spike_times_all[-self.max_points:]
+                    spike_ids_all = spike_ids_all[-self.max_points:]
+                
+                # Update time window (always update, not just when specified)
+                current_time = max(spike_times_all)
+                self.ax.set_xlim(max(0, current_time - self.duration_window), current_time + 0.05)
+                
+                # Update scatter plot data
+                self.scatter.set_offsets(np.column_stack([spike_times_all, spike_ids_all]))
             
             # Return the artists that were modified
             return [self.scatter]
@@ -136,11 +157,11 @@ class DynamicRasterPlot(DynamicPlot):
             print(f"Error updating raster plot: {e}")
             return [self.scatter]
 
-
 class DynamicMembraneTraces(DynamicPlot):
     """Dynamic membrane potential traces that update in real-time"""
     
-    def __init__(self, data_buffer, neurons_to_plot=None, time_window=1.0, Vth=None, **kwargs):
+    def __init__(self, data_buffer, neurons_to_plot=None, time_window=1.0, Vth=None,
+                 time_unit=1.0, volt_unit=1.0, **kwargs):
         """
         Initialize the dynamic membrane potential plot.
         
@@ -153,15 +174,20 @@ class DynamicMembraneTraces(DynamicPlot):
         time_window : float
             Time window to display (in seconds)
         Vth : float, optional
-            Threshold voltage to display as horizontal line
+            Threshold voltage to display as horizontal line (in mV if using Brian units)
+        time_unit : float
+            Conversion factor to seconds for non-Brian time values (default=1.0 assumes seconds)
+        volt_unit : float
+            Conversion factor to mV for non-Brian voltage values (default=1.0 assumes mV)
         """
-        super().__init__(**kwargs)
+        super().__init__(time_unit=time_unit, **kwargs)
         self.data_buffer = data_buffer
         self.neurons_to_plot = neurons_to_plot if neurons_to_plot is not None else list(range(5))
         self.time_window = time_window
         self.Vth = Vth
+        self.volt_unit = volt_unit
         self.lines = []
-        
+    
     def setup(self):
         """Set up the membrane potential plot"""
         super().setup()
@@ -170,11 +196,18 @@ class DynamicMembraneTraces(DynamicPlot):
         self.lines = []
         for i in self.neurons_to_plot:
             line, = self.ax.plot([], [], label=f'Neuron {i}')
+            line.set_animated(True)
             self.lines.append(line)
         
         # Add threshold line if provided
         if self.Vth is not None:
-            self.ax.axhline(self.Vth/mV, color='red', linestyle='--', label='Threshold')
+            # Handle both Brian and non-Brian threshold values
+            if hasattr(self.Vth, 'dimensionality'):
+                vth_val = self.Vth/mV
+            else:
+                vth_val = self.Vth * self.volt_unit
+                
+            self.ax.axhline(vth_val, color='red', linestyle='--', label='Threshold')
         
         # Set initial plot properties
         self.ax.set_xlabel('Time (s)')
@@ -183,7 +216,7 @@ class DynamicMembraneTraces(DynamicPlot):
         self.ax.legend()
         
         return self
-        
+    
     def update(self, frame):
         """Update the membrane potential plot with new data"""
         try:
@@ -196,9 +229,14 @@ class DynamicMembraneTraces(DynamicPlot):
             # Convert Brian2 quantities if needed
             if hasattr(times, 'dimensionality'):
                 times = times/second
+            else:
+                times = np.asarray(times) * self.time_unit
+                
             if hasattr(voltages, 'dimensionality'):
                 voltages = voltages/mV
-                
+            else:
+                voltages = np.asarray(voltages) * self.volt_unit
+            
             # Update time window
             current_time = times[-1]
             self.ax.set_xlim(max(0, current_time - self.time_window), current_time + 0.05)
@@ -222,12 +260,12 @@ class DynamicMembraneTraces(DynamicPlot):
             print(f"Error updating membrane potential plot: {e}")
             return self.lines
 
-
 class DynamicPVAPlot(DynamicPlot):
     """Dynamic Population Vector Average plot that updates in real-time"""
     
-    def __init__(self, data_buffer, positions, num_neurons, window_size=50*ms, 
-                 step_size=10*ms, time_window=2.0, color_trail=True, **kwargs):
+    def __init__(self, data_buffer, positions, num_neurons, 
+                 window_size=50*ms, step_size=10*ms, time_window=2.0, 
+                 color_trail=True, time_unit=1.0, **kwargs):
         """
         Initialize the dynamic PVA plot.
         
@@ -239,33 +277,46 @@ class DynamicPVAPlot(DynamicPlot):
             Neuron positions (angles in radians)
         num_neurons : int
             Total number of neurons in the simulation
-        window_size : Brian2 Quantity
-            Size of the time window for PVA calculation
-        step_size : Brian2 Quantity
-            Step size between successive PVA calculations
+        window_size : float or Brian2 Quantity
+            Size of the time window for PVA calculation (in seconds if not Brian)
+        step_size : float or Brian2 Quantity
+            Step size between successive PVA calculations (in seconds if not Brian)
         time_window : float
             Time window to display (in seconds)
         color_trail : bool
             Whether to color the trail of PVA points by time
+        time_unit : float
+            Conversion factor to seconds for non-Brian time values (default=1.0 assumes seconds)
         """
-        super().__init__(**kwargs)
+        super().__init__(time_unit=time_unit, **kwargs)
         self.data_buffer = data_buffer
         self.positions = positions
         self.num_neurons = num_neurons
-        self.window_size = window_size
-        self.step_size = step_size
+        
+        # Handle window_size and step_size whether they're Brian quantities or not
+        if hasattr(window_size, 'dimensionality'):
+            self.window_size = window_size
+        else:
+            self.window_size = window_size * second
+            
+        if hasattr(step_size, 'dimensionality'):
+            self.step_size = step_size
+        else:
+            self.step_size = step_size * second
+            
         self.time_window = time_window
         self.color_trail = color_trail
         self.scatter = None
         self.times = []
         self.pva_angles = []
-        
+    
     def setup(self):
         """Set up the PVA plot"""
         super().setup()
         
         # Create scatter plot
         self.scatter = self.ax.scatter([], [], s=5, c=[], cmap='viridis')
+        self.scatter.set_animated(True)
         
         # Set initial plot properties
         self.ax.set_xlabel('Time (s)')
@@ -289,8 +340,12 @@ class DynamicPVAPlot(DynamicPlot):
             for spikes in self.data_buffer:
                 if len(spikes) == 2:
                     ids, t = spikes
-                    if hasattr(t, 'dimensionality'):  # Handle Brian2 quantities
+                    # Handle unit conversion
+                    if hasattr(t, 'dimensionality'):  # Brian2 quantities
                         t = t * second
+                    else:
+                        # Convert to seconds and then to Brian units for internal calculations
+                        t = np.asarray(t) * self.time_unit * second
                     all_spike_ids.extend(ids)
                     all_spike_times.extend(t)
             
@@ -324,7 +379,6 @@ class DynamicPVAPlot(DynamicPlot):
                 # Calculate PVA
                 pva_angle, _ = calculate_PVA(window_spike_counts, self.positions)
                 pva_angle = pva_angle if pva_angle >= 0 else pva_angle + 2*np.pi
-                
                 # Add to data
                 self.times.append(t)
                 self.pva_angles.append(pva_angle)
@@ -424,7 +478,7 @@ class DynamicPlotManager:
         
         return self
         
-    def show(self, block=True):
+    def show(self, block=False):
         """
         Show all plots.
         
