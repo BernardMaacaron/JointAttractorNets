@@ -55,4 +55,11 @@ dV/dt = (V_rest - V + I_syn + I_ext)/tau + sigma_noise*xi*tau**(-0.5) : volt (un
 I_syn : volt
 I_ext : volt
 '''
-        
+ 
+LIF_xi_vel_eq = '''
+dV/dt = (V_rest - V + I_syn + I_ext + I_vel)/tau + sigma_noise*xi*tau**(-0.5) : volt (unless refractory)
+I_syn : volt
+I_ext : volt
+I_vel : volt
+theta = 2*pi*i/N : 1
+'''    
