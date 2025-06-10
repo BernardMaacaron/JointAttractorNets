@@ -2,7 +2,7 @@ from neuronModels import *
 from brian2 import *
 
 class RingAttractor():
-    def __init__(self, 
+    def __init__(self,
                  neuron_eq, N=120,
                  Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms, # Neuron parameters
                  syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
@@ -32,7 +32,9 @@ class RingAttractor():
         self.syn_profile = syn_profile.lower()
         self.autapse = autapse
         self.glob_inh = glob_inh
+        self.w_inh = w_inh
         self.BrianObjects = []
+
 
         # Create neuron positions uniformly along the ring [0, 2*pi)
         self.positions = np.linspace(0, 2*pi, N, endpoint=False)
@@ -40,11 +42,9 @@ class RingAttractor():
                                     method="euler", name="ring_neurons")
         self.ring_pool.V = V_reset
         
-
-        rows, cols = np.indices((N, N))
-        index_distMat = np.minimum(np.abs(rows - cols), N - np.abs(rows - cols))
-        angular_distMat = index_distMat * 2 * pi / N
-                
+        # rows, cols = np.indices((N, N))
+        # index_distMat = np.minimum(np.abs(rows - cols), N - np.abs(rows - cols))
+        # angular_distMat = index_distMat * 2 * pi / N
         
         # Synapse Definition
         #+-------------------------------------------------------------------+
@@ -55,23 +55,53 @@ class RingAttractor():
             sigma_inh = syn_params.get('sigma_inh', 3.0)
             g_exc     = syn_params.get('g_exc', 0.1*mV)
             g_inh     = syn_params.get('g_inh', -0.15*mV)
-            self.weights_matrix = g_exc * np.exp(-angular_distMat**2/(2*sigma_exc**2)) \
-                                  + g_inh * np.exp(-angular_distMat**2/(2*sigma_inh**2))                        
+            self.connectivity_eq = 'g_exc * exp(-(theta_pre - theta_post)**2/(2*sigma_exc**2))\
+                                    + g_inh * exp(-(theta_pre - theta_post)**2/(2*sigma_inh**2))'
+            self.connectivityAsym_eq = 'g_exc * exp(-(theta_pre - theta_post - (pi/2))**2/(2*sigma_exc**2))\
+                                    + g_inh * exp(-(theta_pre - theta_post - (pi/2))**2/(2*sigma_inh**2))'
+            # self.weights_matrix = g_exc * np.exp(-angular_distMat**2/(2*sigma_exc**2)) \
+            #                       + g_inh * np.exp(-angular_distMat**2/(2*sigma_inh**2))      
+                              
         elif self.syn_profile == 'gaussian':
             sigma_gauss = syn_params.get('sigma_gauss', 1.0)
             g_gauss     = syn_params.get('g_gauss', 0.1*mV)
-            self.weights_matrix = g_gauss * np.exp(-angular_distMat**2/(2*sigma_gauss**2))
+            self.connectivity_eq = 'g_gauss * exp(-(theta_pre - theta_post)**2/(2*sigma_gauss**2))'
+            # self.weights_matrix = g_gauss * np.exp(-angular_distMat**2/(2*sigma_gauss**2))
+            
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
-            self.weights_matrix = g_cosine * np.cos(angular_distMat)
-            g_sine = 1.0*mV
-            self.weights_matrix_asym = g_sine*np.sin(angular_distMat)
+            g_sine = syn_params.get('g_sine', 0.1*mV)
+            self.connectivity_eq = 'g_cosine * cos(theta_pre - theta_post)'
+            self.connectivityAsym_eq = 'g_sine * sin(theta_pre - theta_post)'
+            # self.weights_matrix = g_cosine * np.cos(angular_distMat)
+            # self.weights_matrix_asym = g_sine * np.sin(angular_distMat)
+            
         else:
             raise ValueError("Unsupported syn_profile. Choose 'mexican_hat', 'gaussian', or 'cosine'.")
         
+        # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
+        self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
+                                on_pre='I_syn_post += w', name='ring_synapses')
+        self.ring_synapses.connect()
+        self.ring_synapses.w = self.connectivity_eq
+        # self.ring_synapses.w[:] = self.weights_matrix.flatten()
+
+        self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
+                                            model='''vel_in : 1 (shared)
+                                                    w_asym : volt''',
+                                    on_pre='I_vel_post += vel_in*w_asym', name='ring_synapses_asym')
+        self.ring_synapses_asym.connect()
+        self.ring_synapses_asym.w_asym = self.connectivityAsym_eq
+        # self.ring_synapses_asym.w_asym[:] = self.weights_matrix_asym.flatten()
+        self.ring_synapses_asym.vel_in = 0.0        
+  
+        # END Synapse Definition
+        #+-------------------------------------------------------------------+
+        
         # Remove self-connections if autapse is False.
         if not self.autapse:
-            np.fill_diagonal(self.weights_matrix, 0)
+            self.ring_synapses.w['i==j'] = 0*mV
+            self.ring_synapses_asym.w_asym['i==j'] = 0*mV
         
         # Create a global inhibitory neuron if glob_inh is True.    
         if self.glob_inh:
@@ -83,33 +113,15 @@ class RingAttractor():
             self.glob_inh2pool = Synapses(self.glob_inh_neuron, self.ring_pool, model='w_inh : volt',
                                               on_pre='I_syn_post += w_inh', name='glob_inh2pool')
             self.glob_inh2pool.connect()
-            self.glob_inh2pool.w_inh = w_inh
+            self.glob_inh2pool.w_inh = self.w_inh
             
             # Synapses from the ring neurons to the global inhibitory neuron.
             self.pool2glob_inh = Synapses(self.ring_pool, self.glob_inh_neuron, model='w_exc : volt',
                                           on_pre='I_syn_post += w_exc', name='pool2glob_inh')
             self.pool2glob_inh.connect()
-            self.pool2glob_inh.w_exc = -w_inh # casts the weight to all neurons in the ring
+            self.pool2glob_inh.w_exc = -self.w_inh # casts the weight to all neurons in the ring
             
             self.BrianObjects.extend([self.glob_inh_neuron, self.glob_inh2pool, self.pool2glob_inh])
-            
-        # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
-        self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
-                                 on_pre='I_syn_post += w', name='ring_synapses')
-        self.ring_synapses.connect()  
-        self.ring_synapses.w = self.weights_matrix.flatten()
+          
         
-        if self.syn_profile == 'cosine':
-            self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
-                                               model='''vel_in : volt
-                                               w_asym : volt''',
-                                 on_pre='I_syn_post += vel_in*w_asym', name='ring_synapses_asym')
-            self.ring_synapses_asym.connect()
-            self.ring_synapses_asym.w_asym = self.weights_matrix_asym.flatten()
-            self.BrianObjects.append(self.ring_synapses_asym)
-        
-        # END Synapse Definition
-        #+-------------------------------------------------------------------+
-        
-        
-        self.BrianObjects.extend([self.ring_pool, self.ring_synapses])
+        self.BrianObjects.extend([self.ring_pool, self.ring_synapses, self.ring_synapses_asym])

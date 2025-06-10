@@ -2,6 +2,32 @@ import matplotlib.pyplot as plt
 from brian2 import *
 from utils import calculate_PVA
 
+def extract_spike_data(spike_input):
+    """
+    Helper function to extract spike data from either a Brian2 SpikeMonitor or a tuple.
+    
+    Parameters:
+    ----------
+    spike_input : Brian2 SpikeMonitor or tuple
+        Either a SpikeMonitor object or a tuple of (spike_ids, spike_times)
+        
+    Returns:
+    -------
+    tuple : (spike_ids, spike_times, is_quantity)
+        - spike_ids: array of neuron indices
+        - spike_times: array of spike times (in seconds or as Brian2 Quantity)
+        - is_quantity: boolean indicating if spike_times is a Brian2 Quantity
+    """
+    if hasattr(spike_input, 't') and hasattr(spike_input, 'i'):
+        # It's a Brian2 SpikeMonitor
+        return spike_input.i, spike_input.t, True
+    else:
+        # It's a tuple of (spike_ids, spike_times)
+        spike_ids, spike_times = spike_input
+        # Check if spike_times is a Brian2 Quantity
+        is_quantity = hasattr(spike_times, 'dimensionality')
+        return spike_ids, spike_times, is_quantity
+
 def plot_on_circle(x, y, 
                    title="Circular Plot",
                    title_pad=30,      # Padding between title and plot
@@ -112,13 +138,16 @@ def visualise_connectivity(Synapses):
     ylabel('Target neuron index')
 
 def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highlight',
-                highlight_alpha=0.2, highlight_color='yellow', lines_style='--', duration=None):
+                highlight_alpha=0.2, highlight_color='yellow', lines_style='--', duration=None,
+                num_neurons = 120, y_axisFull=False):
     """Create a raster plot of spike times with optional stimulus visualization
     
     Parameters:
     ----------
-    spikemon : Brian2 SpikeMonitor
-        Monitor object containing spike data
+    spikemon : Brian2 SpikeMonitor or tuple
+        Monitor object containing spike data, or a tuple of (spike_ids, spike_times)
+        where spike_ids is an array of neuron indices and spike_times is an array of 
+        corresponding spike times (in seconds or as Brian2 Quantity objects)
     ax : matplotlib axis, optional
         Axis to plot on. If None, a new figure will be created
     stim_periods : list of tuples or tuple, optional
@@ -146,8 +175,15 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
+    # Extract spike data
+    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
+    
+    # Convert spike_times to seconds if it's a Brian2 Quantity
+    if is_quantity:
+        spike_times = spike_times/second
+    
     # Plot spike data
-    ax.plot(spikemon.t/second, spikemon.i, '.k', ms=1)
+    ax.plot(spike_times, spike_ids, '.k', ms=1)
     
     # Handle stimulus visualization if provided
     if stim_periods is not None:
@@ -161,7 +197,7 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
         
         # Ensure enough colors for all periods
         if len(highlight_color) < len(stim_periods):
-            highlight_color = highlight_color * (len(stim_periods) // len(highlight_color) + 1)
+            highlight_color = highlight_color * (len(highlight_color) // len(stim_periods) + 1)
             
         # Display each stimulus period
         for i, (start, end) in enumerate(stim_periods):
@@ -178,6 +214,9 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     if duration is not None:
         ax.set_xlim(0, duration/second)
     
+    if y_axisFull:
+        ax.set_ylim(-1, num_neurons)
+    
     # Set labels and title
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Neuron index')
@@ -190,8 +229,10 @@ def firing_rate_profile(spikemon, positions, duration, ax=None):
     
     Parameters:
     ----------
-    spikemon : Brian2 SpikeMonitor
-        Monitor containing spike data
+    spikemon : Brian2 SpikeMonitor or tuple
+        Monitor containing spike data, or a tuple of (spike_ids, spike_times)
+        where spike_ids is an array of neuron indices and spike_times is an array of 
+        corresponding spike times (in seconds or as Brian2 Quantity objects)
     positions : array
         Position of each neuron on the ring
     duration : Brian2 Quantity
@@ -209,11 +250,18 @@ def firing_rate_profile(spikemon, positions, duration, ax=None):
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
+    # Extract spike data
+    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
+    
+    # Ensure spike_times is a Brian2 Quantity for consistency
+    if not is_quantity:
+        spike_times = spike_times * second
+    
     num_indices = len(positions)
     # Calculate firing rates
     spike_count = np.zeros(num_indices)
     
-    for i, t in zip(spikemon.i, spikemon.t):
+    for i, t in zip(spike_ids, spike_times):
         spike_count[i] += 1
     
     firing_rate = spike_count / (duration/second)
@@ -278,7 +326,9 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     Plot time-resolved population vector average using calculate_PVA from utils and optionally color the windows.
     
     Parameters:
-        spikemon (Brian2 SpikeMonitor): Monitor containing spike data.
+        spikemon (Brian2 SpikeMonitor or tuple): Monitor containing spike data, or a tuple of (spike_ids, spike_times)
+            where spike_ids is an array of neuron indices and spike_times is an array of 
+            corresponding spike times (in seconds or as Brian2 Quantity objects)
         positions (array): Neuron positions (angles in radians).
         duration (Brian2 Quantity): Total simulation duration.
         num_neurons (int): Number of neurons.
@@ -299,6 +349,13 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
+    # Extract spike data
+    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
+    
+    # Ensure spike_times is a Brian2 Quantity for consistency
+    if not is_quantity:
+        spike_times = spike_times * second
+    
     # Generate time windows in seconds.
     t_windows = np.arange(0, duration/second, step_size/second)
     pva_angles = np.zeros(len(t_windows))
@@ -309,7 +366,7 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
         
         # Count spikes for each neuron in the current window
         window_spike_counts = np.zeros(num_neurons)
-        for neuron_idx, spike_time in zip(spikemon.i, spikemon.t):
+        for neuron_idx, spike_time in zip(spike_ids, spike_times):
             if t_start <= spike_time < t_end:
                 window_spike_counts[neuron_idx] += 1
         
