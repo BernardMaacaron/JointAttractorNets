@@ -1,0 +1,7 @@
+#ifndef _INCLUDED_glob_inh2pool_synapses_create_generator_codeobject
+#define _INCLUDED_glob_inh2pool_synapses_create_generator_codeobject
+
+void _run_glob_inh2pool_synapses_create_generator_codeobject();
+
+
+#endif

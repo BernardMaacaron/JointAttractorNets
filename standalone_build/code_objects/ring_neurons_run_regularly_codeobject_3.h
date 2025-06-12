@@ -1,0 +1,7 @@
+#ifndef _INCLUDED_ring_neurons_run_regularly_codeobject_3
+#define _INCLUDED_ring_neurons_run_regularly_codeobject_3
+
+void _run_ring_neurons_run_regularly_codeobject_3();
+
+
+#endif

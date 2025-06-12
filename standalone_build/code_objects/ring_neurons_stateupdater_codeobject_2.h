@@ -1,0 +1,7 @@
+#ifndef _INCLUDED_ring_neurons_stateupdater_codeobject_2
+#define _INCLUDED_ring_neurons_stateupdater_codeobject_2
+
+void _run_ring_neurons_stateupdater_codeobject_2();
+
+
+#endif

@@ -1,0 +1,7 @@
+#ifndef _INCLUDED_ring_neurons_spike_resetter_codeobject
+#define _INCLUDED_ring_neurons_spike_resetter_codeobject
+
+void _run_ring_neurons_spike_resetter_codeobject();
+
+
+#endif

@@ -1,0 +1,6 @@
+#ifndef _INCLUDED_ring_neurons_spike_thresholder_codeobject_after
+#define _INCLUDED_ring_neurons_spike_thresholder_codeobject_after
+
+void _after_run_ring_neurons_spike_thresholder_codeobject();
+
+#endif

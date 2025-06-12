@@ -1,0 +1,7 @@
+#ifndef _INCLUDED_glob_inh_neuron_stateupdater_codeobject
+#define _INCLUDED_glob_inh_neuron_stateupdater_codeobject
+
+void _run_glob_inh_neuron_stateupdater_codeobject();
+
+
+#endif

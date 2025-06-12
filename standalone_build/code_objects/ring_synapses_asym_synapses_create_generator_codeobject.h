@@ -1,0 +1,7 @@
+#ifndef _INCLUDED_ring_synapses_asym_synapses_create_generator_codeobject
+#define _INCLUDED_ring_synapses_asym_synapses_create_generator_codeobject
+
+void _run_ring_synapses_asym_synapses_create_generator_codeobject();
+
+
+#endif
