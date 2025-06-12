@@ -1,10 +1,10 @@
 # JointAttractorNets
-**Dual implementations (Brian2 & PyTorch) of attractor networks for robotic joint-space representation.**
+**Dual implementations (Brian2 & DynapSE) of attractor networks for robotic joint-space representation.**
 
-This repository explores attractor networks tailored to the joint-space of robots. It provides **two separate codebases**—one in **Brian2** and one in **PyTorch**—each maintained on its own branch, with a shared `docs` branch holding all documentation and references.
+This repository explores attractor networks tailored to the joint-space of robots. It provides **two separate codebases**—one in **Brian2** and one in **DynapSE**—each maintained on its own branch, with a shared `docs` branch holding all documentation and references.
 
 - **Brian2** Code: [Branch `Brian2-main`](https://github.com/BernardMaacaron/JointAttractorNets/tree/Brian2-main)  
-- **PyTorch** Code: [Branch `PyTorch-main`](https://github.com/BernardMaacaron/JointAttractorNets/tree/PyTorch-main)
+- **DynapSE** Code: [Branch `DynapSE-main`](https://github.com/BernardMaacaron/JointAttractorNets/tree/DynapSE-main)
 
 **Note:** The excel sheet contains the *architecture specifications* for the attractor networks can be found [here](https://istitutoitalianotecnologia-my.sharepoint.com/:x:/g/personal/bernard_maacaron_iit_it/EaOFdtbEMGZJgHFSxeu-YYEBvUkEcJdpQA-ryHbPz62cdQ?e=WyVAhq). Access is required.
 
@@ -20,8 +20,8 @@ This repository explores attractor networks tailored to the joint-space of robot
    - Houses the **Brian2** implementation of the attractor networks.  
    - Pulls in updates from the `docs` branch (e.g., new or revised documentation).
 
-3. **PyTorch-main**  
-   - Houses the **PyTorch** implementation.  
+3. **DynapSE-main**  
+   - Houses the **DynapSE** implementation.  
    - Also merges or rebases documentation updates from the `docs` branch.
 
 ---
@@ -39,12 +39,12 @@ This repository explores attractor networks tailored to the joint-space of robot
      ```bash
      git checkout Brian2-main
      ```
-   - **PyTorch** code:  
+   - **DynapSE** code:  
      ```bash
-     git checkout PyTorch-main
+     git checkout DynapSE-main
      ```
 3. **Install Dependencies**  
-   - Each code branch (Brian2 or PyTorch) may have its own `requirements.txt` or environment setup.  
+   - Each code branch (Brian2 or DynapSE) may have its own `requirements.txt` or environment setup.  
    - See the `README.md` or instructions within that branch for more detail.
 
 ---
@@ -57,9 +57,9 @@ This repository explores attractor networks tailored to the joint-space of robot
    - Once approved, merge to keep `docs` updated.
 
 2. **Code Development**  
-   - Switch to the relevant code branch (`Brian2-main` or `PyTorch-main`).  
-   - Create a feature branch for your work (e.g., `Brian2-featureXYZ` or `PyTorch-featureXYZ`).  
-   - Implement, test, then commit and push. Open a PR back into the main code branch (`Brian2-main` or `PyTorch-main`).
+   - Switch to the relevant code branch (`Brian2-main` or `DynapSE-main`).  
+   - Create a feature branch for your work (e.g., `Brian2-featureXYZ` or `DynapSE-featureXYZ`).  
+   - Implement, test, then commit and push. Open a PR back into the main code branch (`Brian2-main` or `DynapSE-main`).
 
 3. **Syncing Documentation**  
    - If you need the latest docs in your code branch, **merge** or **rebase** from `docs`:
@@ -72,7 +72,7 @@ This repository explores attractor networks tailored to the joint-space of robot
      ```
 
 4. **Release Workflow**  
-   - When ready, tag or create releases separately in `Brian2-main` and `PyTorch-main` if you want distinct versioning.
+   - When ready, tag or create releases separately in `Brian2-main` and `DynapSE-main` if you want distinct versioning.
 
 ---
 
@@ -90,20 +90,20 @@ JointAttractorNets/
 │   ├─ requirements.txt
 │   ├─ brian2_code/
 │   └─ ...
-└─ PyTorch-main/            # (exists on the PyTorch-main branch)
+└─ DynapSE-main/            # (exists on the DynapSE-main branch)
     ├─ requirements.txt
-    ├─ pytorch_code/
+    ├─ DynapSE_code/
     └─ ...
 ```
 
-> **Note**: On GitHub, you’ll only see `docs/` in the **docs** branch. The `brian2_code/` or `pytorch_code/` structures live in their respective branches.
+> **Note**: On GitHub, you’ll only see `docs/` in the **docs** branch. The `brian2_code/` or `DynapSE_code/` structures live in their respective branches.
 
 ---
 
 ## Contributing
 
 - **Documentation**: Open pull requests into the `docs` branch.  
-- **Brian2 or PyTorch Code**: Open pull requests into the corresponding branch.  
+- **Brian2 or DynapSE Code**: Open pull requests into the corresponding branch.  
 - Follow any guidelines or style conventions outlined in our [Contributing Guide](docs/CONTRIBUTING.md) (if present).
 
 ---
