@@ -4,6 +4,9 @@ from tqdm import tqdm
 import multiprocessing as mp
 from brian2 import *  # Brian2 must be imported for the simulation
 import pygad
+import time
+
+start_time = time.time()
 
 # Import the simulation function from your model file
 from optimization_model import opt_ring_attractor  # your simulation function
@@ -15,6 +18,9 @@ from utils import *
 # Options: 'mexican_hat', 'cosine'
 connectivity_profile = 'mexican_hat'  # Change this to 'cosine' to optimize the cosine profile
 
+stim_center = 1.571
+stim_width = 0.5
+
 # Fixed parameters for the simulation (not searched over)
 fixed_params = {
     'tau': 10,           # in our simulation, run_ring_attractor converts this to ms.
@@ -23,6 +29,8 @@ fixed_params = {
 }
 
 # Set the ranges to sample the initial values from
+# Note: during optimization, the values can go outside these ranges,
+# but it is possible to set limits for that as well.
 if connectivity_profile == 'mexican_hat':
     sigma_exc_range = [0.05, 0.2]   # excitatory spread
     sigma_inh_range = [0.1, 0.3]    # inhibitory spread
@@ -37,10 +45,16 @@ else:
 
 
 # GA hyperparameters
-population_size = 5
-num_generations = 5
+population_size = 200
+num_generations = 2
 num_parents_mating = 2
-mutation_type = "random"
+mutation_type = "random" # Options: "random", "swap", "inversion", "scramble", "adaptive", or a custom function
+parent_selection_type = "sss" # Options: "sss" (steady state selection), "rws" (roulette wheel selection),
+                              # "sus" (stochastic universal selection), "rank", "tournament", "random", or a custom function
+crossover_type = "single_point" # Options: "single_point", "two_points", "uniform", "scattered", or a custom function
+
+# parallel processing
+num_processes = 12
 
 # Number of genes based on the connectivity profile
 if connectivity_profile == 'mexican_hat':
@@ -53,6 +67,7 @@ else:
 
 def on_generation(ga_instance):
     print(f"Generation {ga_instance.generations_completed} - Best composite error: {1/(ga_instance.best_solution()[1])}")
+    print(f"Time elapsed: {time.time() - start_time:.2f} seconds")
 
 
 def fitness_func(ga_instance, solution, solution_idx):
@@ -74,7 +89,7 @@ def fitness_func(ga_instance, solution, solution_idx):
     try:
         # Run the simulation.
         # opt_ring_attractor returns: (GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude)
-        GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params)
+        GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params, stim_center=stim_center, stim_width=stim_width)
         
         # Compute the circular standard deviation (spread) from the PVA magnitude.
         circular_std = np.sqrt(-2 * np.log(out_pva_magnitude + 1e-8))
@@ -119,7 +134,10 @@ ga_instance = pygad.GA(num_generations=num_generations,
                        num_genes=num_genes,
                        num_parents_mating=num_parents_mating,
                        mutation_type=mutation_type,
-                       on_generation=on_generation)
+                       on_generation=on_generation,
+                       parent_selection_type=parent_selection_type,
+                       crossover_type=crossover_type,
+                       parallel_processing=["process", num_processes])
 
 
 # Initialize the population with random values within the specified ranges
@@ -132,7 +150,7 @@ if connectivity_profile == 'mexican_hat':
     ga_instance.initialize_population(low = [sigma_exc_range[0], sigma_inh_range[0], g_exc_range[0], g_inh_range[0]],
                                       high = [sigma_exc_range[1], sigma_inh_range[1], g_exc_range[1], g_inh_range[1]],
                                       allow_duplicate_genes=True,
-                                      mutation_by_replacement=True,
+                                      mutation_by_replacement=False,
                                       gene_type=[float, float, float, float])
 elif connectivity_profile == 'cosine':
     raise NotImplementedError("Cosine profile optimization not yet implemented in GA initialization.")
@@ -156,7 +174,8 @@ if __name__ == '__main__':
     g_exc: {solution[2]} mV
     g_inh: {solution[3]} mV
 """)
-   
+
+    print(f"Total time taken for optimization: {time.time() - start_time:.2f} seconds")
     exit()
     # Convert results to a pandas DataFrame for easier sorting and saving.
     results_df = pd.DataFrame(results)
