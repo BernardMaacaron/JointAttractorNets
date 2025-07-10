@@ -1,12 +1,25 @@
 import itertools
 import pandas as pd
-from tqdm import tqdm
 import multiprocessing as mp
 from brian2 import *  # Brian2 must be imported for the simulation
 import pygad
 import time
+import sys
+import os
+import argparse
+import matplotlib.pyplot as plt
 
+# For keeping track of how much time each generation takes
 start_time = time.time()
+previous_gen_start_time = start_time
+
+# For collecting stats, i.e. the errors of the best specimens in each generation,
+# the means/standard deviations of the errors of the specimens that don't crash,
+# and the variation within the population over time (mean of standard deviations of the genes).
+best_errors = []
+mean_errors_working_specimens = []
+std_errors_working_specimens = []
+mean_gene_stddevs = []
 
 # Import the simulation function from your model file
 from optimization_model import opt_ring_attractor  # your simulation function
@@ -14,28 +27,122 @@ from optimization_model import opt_ring_attractor  # your simulation function
 from utils import *
 
 
-# Set the connectivity profile to optimize
-# Options: 'mexican_hat', 'cosine'
-connectivity_profile = 'mexican_hat'  # Change this to 'cosine' to optimize the cosine profile
+# Check if directory 'GA_results' exists, if not create it
+if not os.path.exists('GA_results'):
+    os.makedirs('GA_results')
 
-stim_center = 1.571
-stim_width = 0.5
+# Create a unique directory for the current run based on the timestamp
+current_results_dirname = f"GA_results/GA_run_{time.strftime('%Y%m%d_%H%M%S')}"
+if not os.path.exists(current_results_dirname):
+    os.makedirs(current_results_dirname)
+
+
+# Set up argparse. Read in settings from command line, or use defaults.
+parser = argparse.ArgumentParser(description='Run GA optimization for ring attractor model.')
+
+parser.add_argument('--num_processes', type=int, default=1, help='Number of processes for parallel processing.')
+parser.add_argument('--population_size', type=int, default=100, help='Population size for the genetic algorithm.')
+parser.add_argument('--random_seed', type=int, default=24, help='Random seed for reproducibility.')
+parser.add_argument('--num_generations', type=int, default=500, help='Number of generations for the genetic algorithm.')
+parser.add_argument('--num_parents_mating', type=int, default=50, help='Number of parents mating in each generation.')
+parser.add_argument('--mutation_type', type=str, default='adaptive', choices=['random', 'swap', 'inversion', 'scramble', 'adaptive', ], help='Type of mutation to use in the genetic algorithm.') # Options: "random", "swap", "inversion", "scramble", "adaptive", or a custom function
+parser.add_argument('--mutation_probability', type=float, default=[0.5, 0.25], nargs=2, help='Probability of mutation for each gene. If using adaptive mutation, this should be a list of two values: the first for lower-than-average fitness solutions, the second for higher-than-average fitness solutions. If using random mutation, this should be a single value for all solutions.')
+parser.add_argument('--parent_selection_type', type=str, default='rws', choices=['sss', 'rws', 'sus', 'rank', 'tournament', 'random'], help='Parent selection method for the genetic algorithm.')
+parser.add_argument('--connectivity_profile', type=str, default='mexican_hat', choices=['mexican_hat', 'cosine'], help='Connectivity profile to optimize.')
+parser.add_argument('--crossover_type', type=str, default='single_point', choices=['single_point', 'two_points', 'uniform', 'scattered'], help='Crossover type for the genetic algorithm.')
+parser.add_argument('--keep_elitism', type=int, default=1, help='Number of best solutions to keep in the next generation.')
+parser.add_argument('--rand_mut_min_val', type=float, default=-0.1, help='Minimum value for random mutation.')
+parser.add_argument('--rand_mut_max_val', type=float, default=0.1, help='Maximum value for random mutation.')
+parser.add_argument('--w_center', type=float, default=0.3, help='Weight for center error in composite error calculation.')
+parser.add_argument('--w_Zscore', type=float, default=0.2, help='Weight for angular Z-score in composite error calculation.')
+parser.add_argument('--w_nmse', type=float, default=0.5, help='Weight for NMSE in composite error calculation.')
+parser.add_argument('--initial_ranges_mex', type=float, nargs=8, default=[0.05, 0.2, 0.1, 0.3, 0.5, 1.0, -1.0, -0.3], help='Initial ranges for Mexican hat connectivity profile: sigma_exc_min, sigma_exc_max, sigma_inh_min, sigma_inh_max, g_exc_min, g_exc_max, g_inh_min, g_inh_max.')
+parser.add_argument('--stim_center', type=float, default=1.571, help='Center of the stimulus for the ring attractor model.')
+parser.add_argument('--stim_width', type=float, default=0.5, help='Width of the stimulus for the ring attractor model.')
+parser.add_argument('--tau', type=float, default=10.0, help='Time constant for the ring attractor model in ms.')
+parser.add_argument('--sigma_noise', type=float, default=1.0)
+
+
+args = parser.parse_args()
+
+rand_seed = args.random_seed
+num_processes = args.num_processes
+population_size = args.population_size
+num_generations = args.num_generations
+num_parents_mating = args.num_parents_mating
+mutation_type = args.mutation_type
+mutation_probability = args.mutation_probability
+connectivity_profile = args.connectivity_profile
+parent_selection_type = args.parent_selection_type
+crossover_type = args.crossover_type
+keep_elitism = args.keep_elitism
+rand_mut_min_val = args.rand_mut_min_val
+rand_mut_max_val = args.rand_mut_max_val
+
+w_center = args.w_center
+w_Zscore = args.w_Zscore
+w_nmse = args.w_nmse
+
+initial_ranges_mex = args.initial_ranges_mex
+
+stim_center = args.stim_center
+stim_width = args.stim_width
+
+tau = args.tau 
+sigma_noise = args.sigma_noise
+
+# Write the parameters to a file
+with open(f"{current_results_dirname}/exp_params.txt", "w") as f:
+    f.write(f"Random seed: {rand_seed}\n")
+    f.write(f"Number of processes: {num_processes}\n")
+    f.write(f"Population size: {population_size}\n")
+    f.write(f"Number of generations: {num_generations}\n")
+    f.write(f"Number of parents mating: {num_parents_mating}\n")
+    f.write(f"Mutation type: {mutation_type}\n")
+    f.write(f"Mutation probability: {mutation_probability}\n")
+    f.write(f"Parent selection type: {parent_selection_type}\n")
+    f.write(f"Connectivity profile: {connectivity_profile}\n")
+    f.write(f"Crossover type: {crossover_type}\n")
+    f.write(f"Keep elitism: {keep_elitism}\n")
+    f.write(f"Random mutation min value: {rand_mut_min_val}\n")
+    f.write(f"Random mutation max value: {rand_mut_max_val}\n")
+    f.write(f"Weight for center error: {w_center}\n")
+    f.write(f"Weight for angular Z-score: {w_Zscore}\n")
+    f.write(f"Weight for NMSE: {w_nmse}\n")
+    f.write(f"Initial ranges for Mexican hat connectivity profile: {initial_ranges_mex}\n")
+
+
+# If adaptive mutation is used, there is a probability for lower-than-average fitness solutions 
+# and a probability for higher-than-average fitness solutions.
+if not (mutation_type in ['adaptive']):
+    mutation_probability = mutation_probability[0]  # Use the first value for all solutions
+
+# Set seed for reproducibility
+np.random.seed(rand_seed)
+seed(rand_seed)
+
+
 
 # Fixed parameters for the simulation (not searched over)
 fixed_params = {
-    'tau': 10,           # in our simulation, run_ring_attractor converts this to ms.
-    'sigma_noise': 1,    # similarly converted to mV inside run_ring_attractor.
+    'tau': tau,           # in our simulation, run_ring_attractor converts this to ms.
+    'sigma_noise': sigma_noise,   # similarly converted to mV inside run_ring_attractor.
     'syn_profile': connectivity_profile,  # Set the connectivity profile
 }
+
 
 # Set the ranges to sample the initial values from
 # Note: during optimization, the values can go outside these ranges,
 # but it is possible to set limits for that as well.
 if connectivity_profile == 'mexican_hat':
-    sigma_exc_range = [0.05, 0.2]   # excitatory spread
-    sigma_inh_range = [0.1, 0.3]    # inhibitory spread
-    g_exc_range   = [0.5, 1.0]      # excitatory gain
-    g_inh_range   = [-1.0, -0.3]    # inhibitory gain
+    sigma_exc_range = initial_ranges_mex[:2]  # Use the first two values for sigma_exc
+    sigma_inh_range = initial_ranges_mex[2:4]  # Use the next two values for sigma_inh
+    g_exc_range   = initial_ranges_mex[4:6]    # Use the next two values for g_exc
+    g_inh_range   = initial_ranges_mex[6:8]    # Use the last two values for g_inh
+    gene_0_stddevs = []
+    gene_1_stddevs = []
+    gene_2_stddevs = []
+    gene_3_stddevs = []
 elif connectivity_profile == 'cosine':
     g_cosine_range = [0.01, 0.1]    # cosine gain
     glob_inh_range = [True, False]  # global inhibition flag
@@ -44,17 +151,7 @@ else:
     raise ValueError("Unsupported connectivity profile. Choose 'mexican_hat' or 'cosine'.")
 
 
-# GA hyperparameters
-population_size = 200
-num_generations = 2
-num_parents_mating = 2
-mutation_type = "random" # Options: "random", "swap", "inversion", "scramble", "adaptive", or a custom function
-parent_selection_type = "sss" # Options: "sss" (steady state selection), "rws" (roulette wheel selection),
-                              # "sus" (stochastic universal selection), "rank", "tournament", "random", or a custom function
-crossover_type = "single_point" # Options: "single_point", "two_points", "uniform", "scattered", or a custom function
 
-# parallel processing
-num_processes = 12
 
 # Number of genes based on the connectivity profile
 if connectivity_profile == 'mexican_hat':
@@ -65,12 +162,92 @@ else:
     raise ValueError("Unsupported connectivity profile. Choose 'mexican_hat' or 'cosine'.")
 
 
+# Function that is called after each generation to collect statistics and print results
 def on_generation(ga_instance):
-    print(f"Generation {ga_instance.generations_completed} - Best composite error: {1/(ga_instance.best_solution()[1])}")
-    print(f"Time elapsed: {time.time() - start_time:.2f} seconds")
+    global previous_gen_start_time
+    global best_errors
+    global mean_errors_working_specimens
+    global std_errors_working_specimens
+    global current_results_dirname
+    global gene_0_stddevs, gene_1_stddevs, gene_2_stddevs, gene_3_stddevs
+    global mean_gene_stddevs
+    
+
+    # Calculate the population standard deviation for each gene
+    # This gives a measure of the variation within the population
+    all_genomes = ga_instance.population
+    gene_std_devs = np.std(all_genomes, axis=0)
+    mean_gene_stddevs.append(np.mean(gene_std_devs))
+    if connectivity_profile == 'mexican_hat':
+        gene_0_stddevs.append(gene_std_devs[0])
+        gene_1_stddevs.append(gene_std_devs[1])
+        gene_2_stddevs.append(gene_std_devs[2])
+        gene_3_stddevs.append(gene_std_devs[3])
+        np.savetxt(f"{current_results_dirname}/gene_0_stddevs.txt", np.array(gene_0_stddevs))
+        np.savetxt(f"{current_results_dirname}/gene_1_stddevs.txt", np.array(gene_1_stddevs))
+        np.savetxt(f"{current_results_dirname}/gene_2_stddevs.txt", np.array(gene_2_stddevs))
+        np.savetxt(f"{current_results_dirname}/gene_3_stddevs.txt", np.array(gene_3_stddevs))
+    elif connectivity_profile == 'cosine':
+        gene_0_stddevs.append(gene_std_devs[0])
+        gene_1_stddevs.append(gene_std_devs[1])
+        gene_2_stddevs.append(gene_std_devs[2])
+        np.savetxt(f"{current_results_dirname}/gene_0_stddevs.txt", np.array(gene_0_stddevs))
+        np.savetxt(f"{current_results_dirname}/gene_1_stddevs.txt", np.array(gene_1_stddevs))
+        np.savetxt(f"{current_results_dirname}/gene_2_stddevs.txt", np.array(gene_2_stddevs))
+    else:
+        raise ValueError("Unsupported connectivity profile. Choose 'mexican_hat' or 'cosine'.")
+    
+    np.savetxt(f"{current_results_dirname}/mean_gene_stddevs.txt", np.array(mean_gene_stddevs))
 
 
+
+    # Retrieve the fitnesses of working and failed specimens
+    # The fitness function is set up such that a negative fitness is given
+    # to specimens that fail the simulation for some reason (e.g., NaN values). 
+    pop_fitnesses = np.array(ga_instance.last_generation_fitness)
+    positive_fitnesses = pop_fitnesses[pop_fitnesses >= 0]
+    negative_fitnesses = pop_fitnesses[pop_fitnesses < 0]
+
+    # Calculate the errors for working specimens
+    # Simply the inverse of the fitness value calculation as can be seen in the fitness_func.
+    working_errors = (1.0 / positive_fitnesses) - 1e-8
+    mean_working_error = np.mean(working_errors)
+    std_working_error = np.std(working_errors)
+    mean_errors_working_specimens.append(mean_working_error)
+    std_errors_working_specimens.append(std_working_error)
+
+    np.savetxt(f"{current_results_dirname}/mean_errors_working_specimens.txt", np.array(mean_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/std_errors_working_specimens.txt", np.array(std_errors_working_specimens))
+
+    print(f"Generation mean FITNESS (working solutions): {np.mean(positive_fitnesses):.4f} +/- {np.std(positive_fitnesses):.4f} | {len(positive_fitnesses)} working, {len(negative_fitnesses)} failed solutions")
+    print(f"Generation mean ERROR (working solutions): {mean_working_error:.4f} +/- {std_working_error:.4f}")
+    print(f"Generation mean gene standard deviations: {np.mean(gene_std_devs):.4f}")
+
+    solution, solution_fitness, solution_idx = ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)
+    best_errors.append(1/(solution_fitness) - 1e-8)
+    np.savetxt(f"{current_results_dirname}/best_errors.txt", np.array(best_errors))
+    
+    gens_completed = ga_instance.generations_completed
+    with open(f"{current_results_dirname}/exp_results.txt", "a") as f:
+        f.write(f"Generation {gens_completed} - Best composite error: {1/(solution_fitness) - 1e-8} (sigma_exc: {solution[0]}, sigma_inh: {solution[1]}, g_exc: {solution[2]} mV, g_inh: {solution[3]} mV)\n")
+        f.write(f"Generation mean FITNESS: {np.mean(positive_fitnesses):.4f} +/- {np.std(positive_fitnesses):.4f} | {len(positive_fitnesses)} working, {len(negative_fitnesses)} failed solutions\n")
+        f.write(f"Generation mean ERROR (working solutions): {mean_working_error:.4f} +/- {std_working_error:.4f}\n")
+        f.write(f"Generation mean gene standard deviations: {np.mean(gene_std_devs):.4f}\n")
+        f.write(f"Generation time: {time.time() - previous_gen_start_time:.2f} seconds\n")
+    print(f"Generation {gens_completed} - Best composite error: {1/(solution_fitness) - 1e-8} (sigma_exc: {solution[0]}, sigma_inh: {solution[1]}, g_exc: {solution[2]} mV, g_inh: {solution[3]} mV)")
+    print(f"Generation time: {time.time() - previous_gen_start_time:.2f} seconds\n")
+
+    previous_gen_start_time = time.time()
+
+
+# Function that takes the parameter values given by a specimen, runs a simulation
+# with those values, calculates the composite error, and returns the fitness value.
+# Basically the same as in the grid search code.
+# Specimens for which the simulation fails are given a composite error of -1,
+# so that they can easily be identified and excluded from the statistics.
 def fitness_func(ga_instance, solution, solution_idx):
+    np.random.seed(rand_seed)
+    seed(rand_seed)
 
     params = fixed_params.copy()
 
@@ -107,19 +284,16 @@ def fitness_func(ga_instance, solution, solution_idx):
         
         # Combine the errors into one composite score.
         # Adjust weights to prioritize center accuracy if desired
-        w_center = 0.3
-        w_Zscore = 0.2
-        w_nmse = 0.5
         composite_error = w_center * cwce + w_Zscore * angular_Zscore + w_nmse * nmse
 
         # Check if the composite error is NaN or infinite. In that case, set it to a very high value,
         # so that the fitness value will be very low.
         if np.isnan(composite_error) or np.isinf(composite_error):
-            composite_error = 1e10
+            composite_error = -1
 
     # For now, if there is any exception raised, just give very low fitness value to this solution.
     except Exception as e:
-        composite_error = 1e10
+        composite_error = -1
 
 
     fitness_value = 1.0 / (composite_error + 1e-8)  # Avoid division by zero
@@ -127,26 +301,27 @@ def fitness_func(ga_instance, solution, solution_idx):
     return fitness_value
 
 
-
+# Create the GA instance with the specified parameters
 ga_instance = pygad.GA(num_generations=num_generations,
                        sol_per_pop=population_size,
                        fitness_func=fitness_func,
                        num_genes=num_genes,
                        num_parents_mating=num_parents_mating,
                        mutation_type=mutation_type,
+                       mutation_probability=mutation_probability,
                        on_generation=on_generation,
                        parent_selection_type=parent_selection_type,
                        crossover_type=crossover_type,
-                       parallel_processing=["process", num_processes])
+                       parallel_processing=["process", num_processes],
+                       keep_elitism=keep_elitism,
+                       random_seed=rand_seed,
+                       random_mutation_min_val= rand_mut_min_val,
+                       random_mutation_max_val= rand_mut_max_val)
+
 
 
 # Initialize the population with random values within the specified ranges
 if connectivity_profile == 'mexican_hat':
-    sigma_exc_range = [0.05, 0.2]   # excitatory spread
-    sigma_inh_range = [0.1, 0.3]    # inhibitory spread
-    g_exc_range   = [0.5, 1.0]      # excitatory gain
-    g_inh_range   = [-1.0, -0.3]    # inhibitory gain
-
     ga_instance.initialize_population(low = [sigma_exc_range[0], sigma_inh_range[0], g_exc_range[0], g_inh_range[0]],
                                       high = [sigma_exc_range[1], sigma_inh_range[1], g_exc_range[1], g_inh_range[1]],
                                       allow_duplicate_genes=True,
@@ -162,11 +337,16 @@ else:
 
 
 if __name__ == '__main__':
+
+    # Run the GA optimization. At the end, save all statistics once again, and create plots.
+
     print(f"Starting optimization for {connectivity_profile} connectivity profile")
     
     ga_instance.run()
 
-    solution, solution_fitness, solution_idx = ga_instance.best_solution()
+     
+    solution, solution_fitness, solution_idx = ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)
+    
     print(f"""Best solution found:
     composite error: {1/solution_fitness}
     sigma_exc: {solution[0]}
@@ -174,28 +354,80 @@ if __name__ == '__main__':
     g_exc: {solution[2]} mV
     g_inh: {solution[3]} mV
 """)
+    
+    ga_instance.save(f"{current_results_dirname}/ga_instance_final")
 
     print(f"Total time taken for optimization: {time.time() - start_time:.2f} seconds")
-    exit()
-    # Convert results to a pandas DataFrame for easier sorting and saving.
-    results_df = pd.DataFrame(results)
-    
-    # Save the complete results to a CSV file with profile name in the filename
-    results_filename = f"optimization_results_{connectivity_profile}.csv"
-    results_df.to_csv(results_filename, index=False)
-    print(f"Results saved to {results_filename}")
-    
-    # Results Analysis
-    # If there are any errors, you might want to filter them out for selecting the best parameters.
-    valid_results = results_df[~results_df['composite_error'].isna()]
-    
-    if not valid_results.empty:
-        sortBy = 'composite_error'
-        # Sort the DataFrame based on composite_error (lower is better).
-        best_result = valid_results.sort_values(by=[sortBy], ascending=[True]).iloc[0]
-        print(f"Best parameter set found for {connectivity_profile} profile (sorted by {sortBy}):")
-        print(best_result)
-    else:
-        print("No valid simulation results found.")
+
+    np.savetxt(f"{current_results_dirname}/mean_errors_working_specimens.txt", np.array(mean_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/std_errors_working_specimens.txt", np.array(std_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/best_errors.txt", np.array(best_errors))
+    np.savetxt(f"{current_results_dirname}/mean_gene_stddevs.txt", np.array(mean_gene_stddevs))
+    np.savetxt(f"{current_results_dirname}/gene_0_stddevs.txt", np.array(gene_0_stddevs))
+    np.savetxt(f"{current_results_dirname}/gene_1_stddevs.txt", np.array(gene_1_stddevs))
+    np.savetxt(f"{current_results_dirname}/gene_2_stddevs.txt", np.array(gene_2_stddevs))
+    if connectivity_profile == 'mexican_hat':
+        np.savetxt(f"{current_results_dirname}/gene_3_stddevs.txt", np.array(gene_3_stddevs))
 
 
+    plt.figure()
+    plt.plot(best_errors, label='Best Errors')
+    plt.xlabel('Generation')
+    plt.ylabel('Error')
+    plt.title('Best Errors Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/best_errors.png")
+
+
+    plt.figure()
+    plt.plot(mean_errors_working_specimens, label='Mean Errors (Working Specimens)')
+    plt.fill_between(range(len(mean_errors_working_specimens)), 
+                     np.array(mean_errors_working_specimens) - np.array(std_errors_working_specimens), 
+                     np.array(mean_errors_working_specimens) + np.array(std_errors_working_specimens), 
+                     alpha=0.2)
+    plt.xlabel('Generation')
+    plt.ylabel('Mean Error')
+    plt.title('Mean Errors Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/mean_errors.png")
+
+    plt.figure()
+    plt.plot(mean_gene_stddevs, label='Mean Gene Standard Deviations')
+    plt.xlabel('Generation')
+    plt.ylabel('Mean Gene Std Dev')
+    plt.title('Mean Gene Standard Deviations Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/mean_gene_stddevs.png")
+
+    plt.figure()
+    plt.plot(gene_0_stddevs, label='Gene 0 Std Dev')
+    plt.xlabel('Generation')
+    plt.ylabel('Gene 0 Std Dev')
+    plt.title('Gene 0 Standard Deviations Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/gene_0_stddevs.png")
+
+    plt.figure()
+    plt.plot(gene_1_stddevs, label='Gene 1 Std Dev')
+    plt.xlabel('Generation')
+    plt.ylabel('Gene 1 Std Dev')
+    plt.title('Gene 1 Standard Deviations Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/gene_1_stddevs.png")
+
+    plt.figure()
+    plt.plot(gene_2_stddevs, label='Gene 2 Std Dev')
+    plt.xlabel('Generation')
+    plt.ylabel('Gene 2 Std Dev')
+    plt.title('Gene 2 Standard Deviations Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/gene_2_stddevs.png")
+
+    if connectivity_profile == 'mexican_hat':
+        plt.figure()
+        plt.plot(gene_3_stddevs, label='Gene 3 Std Dev')
+        plt.xlabel('Generation')
+        plt.ylabel('Gene 3 Std Dev')
+        plt.title('Gene 3 Standard Deviations Over Generations')
+        plt.legend()
+        plt.savefig(f"{current_results_dirname}/gene_3_stddevs.png")

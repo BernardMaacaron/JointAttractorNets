@@ -1,0 +1,5 @@
+pandas
+pygad==3.4.0
+brian2
+lmfit
+matplotlib
