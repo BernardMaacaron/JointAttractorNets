@@ -8,6 +8,7 @@ from ringAttractorClass import *
 sys.path.append('Tools')
 from utils import *
 
+
 def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     """
     Run the ring attractor simulation with the specified parameters.
@@ -26,6 +27,7 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     Returns:
         result: Any outcome from the simulation you wish to optimize (e.g., a cost metric)
     """
+    set_device('cpp_standalone', build_on_run=False)  # Use C++ standalone mode for performance
     # --- Simulation parameters ---
     defaultclock.dt = 0.1*ms
     num_neurons = 120
@@ -84,6 +86,8 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     net.run(input_on)
     ringAttractor.ring_pool.I_ext = I_ext_array * 0  # turn off input in second half
     net.run(input_off)
+    
+    device.build(directory='optimizationModel_build', compile=True, run=True, debug=False)
     
     firing_rates = compute_firing_rate(spikemon, num_neurons,
                                        start_time=input_on, end_time=sim_duration)
