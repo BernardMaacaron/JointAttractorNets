@@ -201,3 +201,5 @@ def curveFit_rectPower(firing_rates, input_data, V0=None):
     params.add('p', value=1.0, vary=False)       # exponent must be ≥0
     result = mod.fit(firing_rates, params, V=input_data)
     return result, result.best_values
+
+##################################################

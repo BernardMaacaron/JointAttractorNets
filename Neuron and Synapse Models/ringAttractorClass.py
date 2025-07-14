@@ -8,6 +8,7 @@ class RingAttractor():
                  syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
                  autapse=False,
                  glob_inh = False, w_inh = -0.15*mV,                 # Global Inhibitory neuron parameters
+                 mujoco=False, 
                  **syn_params):
         """
         Constructs a ring attractor network.
@@ -86,14 +87,15 @@ class RingAttractor():
         self.ring_synapses.w = self.connectivity_eq
         # self.ring_synapses.w[:] = self.weights_matrix.flatten()
 
-        self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
-                                            model='''vel_in : 1 (shared)
-                                                    w_asym : volt''',
+        syn_asymEq = syn_asymMujoco if mujoco else syn_asym
+            
+        self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool, model=syn_asymEq,
                                     on_pre='I_vel_post += vel_in*w_asym', name='ring_synapses_asym')
         self.ring_synapses_asym.connect()
         self.ring_synapses_asym.w_asym = self.connectivityAsym_eq
-        # self.ring_synapses_asym.w_asym[:] = self.weights_matrix_asym.flatten()
-        self.ring_synapses_asym.vel_in = 0.0        
+
+        if not mujoco:
+            self.ring_synapses_asym.vel_in = 0.0  # Default velocity input for asymmetrical synapses        
   
         # END Synapse Definition
         #+-------------------------------------------------------------------+
