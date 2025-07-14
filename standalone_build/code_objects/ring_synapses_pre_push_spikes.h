@@ -1,7 +1,0 @@
-#ifndef _INCLUDED_ring_synapses_pre_push_spikes
-#define _INCLUDED_ring_synapses_pre_push_spikes
-
-void _run_ring_synapses_pre_push_spikes();
-
-
-#endif
