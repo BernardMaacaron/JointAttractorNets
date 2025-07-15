@@ -39,14 +39,18 @@ class RingAttractor():
 
         # Create neuron positions uniformly along the ring [0, 2*pi)
         self.positions = np.linspace(0, 2*pi, N, endpoint=False)
-        self.ring_pool = NeuronGroup(self.N, neuron_eq, threshold = 'V > Vth', reset = "V = V_reset", refractory=refractory_period,
+                                     
+        if mujoco: 
+            reset_string = '''V = V_reset
+            dummy_var = store_spike(i, t)'''
+        else:
+            reset_string = 'V = V_reset'
+            
+        self.ring_pool = NeuronGroup(self.N, neuron_eq, threshold = 'V > Vth', reset = reset_string, refractory=refractory_period,
                                     method="euler", name="ring_neurons")
         self.ring_pool.V = V_reset
         
-        # rows, cols = np.indices((N, N))
-        # index_distMat = np.minimum(np.abs(rows - cols), N - np.abs(rows - cols))
-        # angular_distMat = index_distMat * 2 * pi / N
-        
+
         # Synapse Definition
         #+-------------------------------------------------------------------+
         # Build the weight matrix based on the chosen connectivity profile.

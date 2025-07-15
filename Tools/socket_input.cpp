@@ -23,7 +23,7 @@
 static int server_fd = -1;  // server socket
 static int client_fd = -1;  // client socket
 static char buf[BUF_BYTES];
-static std::vector<double> last_values(4, 0.0);
+static std::vector<double> last_values = {-1.0, -1.0, 0.0, -1.0, 0.0};
 
 static void init_listener()
 {
@@ -90,12 +90,12 @@ double get_socket_sample(int index) {
     std::vector<double> values;
     double value;
     
-    while (ss >> value && values.size() < 4) {
+    while (ss >> value && values.size() < 5) {
         values.push_back(value);
     }
 
-    if (values.size() != 4) {
-        std::cerr << "Error: Expected 4 values, got " << values.size() << std::endl;
+    if (values.size() != 5) {
+        std::cerr << "Error: Expected 5 values, got " << values.size() << std::endl;
         return last_values[index]; // Return last valid value on error
     }
 
@@ -103,8 +103,10 @@ double get_socket_sample(int index) {
     last_values = values;
 
     // Print formatted output like Python version
-    std::cout << "Time: " << values[0] << "s, Counter: " << values[1] << ", "
-              << "Position: " << values[2] << "°, Velocity: " << values[3] << "°/s" << std::endl;
+    std::cout << "Time: " << values[0] << "s, Counter: " << values[1] << ", Amplitude: " << values[2] << ", "
+              << "Position: " << values[3] << "°, Velocity: " << values[4] << "°/s" << std::endl;
+
+    // std::cout << "Value to return at index: "<< index << " - "<< values[index] << std::endl;
 
     // Send acknowledgment
     const char* ack = "ACK\n";
