@@ -6,8 +6,9 @@ class RingAttractor():
                  neuron_eq, N=120,
                  Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms, # Neuron parameters
                  syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
-                 autapse=False,
+                 autapse = False,
                  glob_inh = False, w_inh = -0.15*mV,                 # Global Inhibitory neuron parameters
+                 mujoco = False, 
                  **syn_params):
         """
         Constructs a ring attractor network.
@@ -38,14 +39,18 @@ class RingAttractor():
 
         # Create neuron positions uniformly along the ring [0, 2*pi)
         self.positions = np.linspace(0, 2*pi, N, endpoint=False)
-        self.ring_pool = NeuronGroup(self.N, neuron_eq, threshold = 'V > Vth', reset = "V = V_reset", refractory=refractory_period,
+                                     
+        if mujoco: 
+            reset_string = '''V = V_reset
+            dummy_var = store_spike(i, t)'''
+        else:
+            reset_string = 'V = V_reset'
+            
+        self.ring_pool = NeuronGroup(self.N, neuron_eq, threshold = 'V > Vth', reset = reset_string, refractory=refractory_period,
                                     method="euler", name="ring_neurons")
         self.ring_pool.V = V_reset
         
-        # rows, cols = np.indices((N, N))
-        # index_distMat = np.minimum(np.abs(rows - cols), N - np.abs(rows - cols))
-        # angular_distMat = index_distMat * 2 * pi / N
-        
+
         # Synapse Definition
         #+-------------------------------------------------------------------+
         # Build the weight matrix based on the chosen connectivity profile.
@@ -86,14 +91,15 @@ class RingAttractor():
         self.ring_synapses.w = self.connectivity_eq
         # self.ring_synapses.w[:] = self.weights_matrix.flatten()
 
-        self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
-                                            model='''vel_in : 1 (shared)
-                                                    w_asym : volt''',
+        syn_asymEq = syn_asymMujoco if mujoco else syn_asym
+            
+        self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool, model=syn_asymEq,
                                     on_pre='I_vel_post += vel_in*w_asym', name='ring_synapses_asym')
         self.ring_synapses_asym.connect()
         self.ring_synapses_asym.w_asym = self.connectivityAsym_eq
-        # self.ring_synapses_asym.w_asym[:] = self.weights_matrix_asym.flatten()
-        self.ring_synapses_asym.vel_in = 0.0        
+
+        if not mujoco:
+            self.ring_synapses_asym.vel_in = 0.0  # Default velocity input for asymmetrical synapses        
   
         # END Synapse Definition
         #+-------------------------------------------------------------------+

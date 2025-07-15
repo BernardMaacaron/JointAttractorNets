@@ -1,3 +1,4 @@
+import os
 import itertools
 import pandas as pd
 from tqdm import tqdm
@@ -40,7 +41,6 @@ elif connectivity_profile == 'cosine':
             param_grid.append((g, True, w))
 else:
     raise ValueError("Unsupported connectivity profile. Choose 'mexican_hat' or 'cosine'.")
-
 
 
 total_runs = len(param_grid)
@@ -181,8 +181,12 @@ if __name__ == '__main__':
     # Convert results to a pandas DataFrame for easier sorting and saving.
     results_df = pd.DataFrame(results)
     
-    # Save the complete results to a CSV file with profile name in the filename
-    results_filename = f"optimization_results_{connectivity_profile}.csv"
+    # Create folder for results if it doesn't exist.
+    output_folder = "Optimization Results"
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Save the complete results to a CSV file with profile name in the filename inside the folder
+    results_filename = os.path.join(output_folder, f"optimization_results_{connectivity_profile}.csv")
     results_df.to_csv(results_filename, index=False)
     print(f"Results saved to {results_filename}")
     
@@ -198,5 +202,3 @@ if __name__ == '__main__':
         print(best_result)
     else:
         print("No valid simulation results found.")
-
-

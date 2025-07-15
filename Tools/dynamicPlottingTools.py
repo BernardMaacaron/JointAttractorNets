@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from brian2 import *
-from utils import calculate_PVA
+from Tools.utils import calculate_PVA
 
 class DynamicPlot:
     """Base class for all dynamic plots"""
@@ -112,43 +112,41 @@ class DynamicRasterPlot(DynamicPlot):
         try:
             spike_times_all = []
             spike_ids_all = []
-            # Extract data from buffer
+            
             for spikes in self.data_buffer:
-                if len(spikes) == 2:  # Ensure tuple contains (ids, times)
+                if len(spikes) == 2:
                     ids, times = spikes
-            #         # Convert to seconds if needed
-            #         if hasattr(times, 'dimensionality'):  # Handle Brian2 quantities
-            #             times = times/second
-            #         else:
-            #             # Apply custom unit conversion for non-Brian data
-            #             times = np.asarray(times) * self.time_unit
+                    # Convert times to seconds if they're Brian quantities
+                    if hasattr(times, 'dimensionality'):
+                        times = times/second
+                    else:
+                        times = np.asarray(times) * self.time_unit
                         
-                    # Collect all spike data
                     spike_ids_all.extend(ids)
                     spike_times_all.extend(times)
             
-            #     # Convert to arrays for plotting
-            #     spike_times_all = np.array(ids)
-            #     spike_ids_all = np.array(times)
-            # order = np.argsort(spike_times_all)
-            # spike_times_all = spike_times_all[order]
-            # spike_ids_all = spike_ids_all[order]
-            
-            
-            # Update scatter plot data
-            if len(spike_times_all) > 0:
-                # Limit to max_points for performance
-                if len(spike_times_all) > self.max_points:
-                    # Keep the most recent spikes
-                    spike_times_all = spike_times_all[-self.max_points:]
-                    spike_ids_all = spike_ids_all[-self.max_points:]
-                
-                # Update time window (always update, not just when specified)
-                current_time = max(spike_times_all)
-                self.ax.set_xlim(max(0, current_time - self.duration_window), current_time + 0.05)
+            # Convert to arrays and sort by time
+            if spike_times_all:
+                spike_times_all = np.array(spike_times_all)
+                spike_ids_all = np.array(spike_ids_all)
+                order = np.argsort(spike_times_all)
+                spike_times_all = spike_times_all[order]
+                spike_ids_all = spike_ids_all[order]
                 
                 # Update scatter plot data
-                self.scatter.set_offsets(np.column_stack([spike_times_all, spike_ids_all]))
+                if len(spike_times_all) > 0:
+                    # Limit to max_points for performance
+                    if len(spike_times_all) > self.max_points:
+                        # Keep the most recent spikes
+                        spike_times_all = spike_times_all[-self.max_points:]
+                        spike_ids_all = spike_ids_all[-self.max_points:]
+                    
+                    # Update time window (always update, not just when specified)
+                    current_time = max(spike_times_all)
+                    self.ax.set_xlim(max(0, current_time - self.duration_window), current_time + 0.05)
+                    
+                    # Update scatter plot data
+                    self.scatter.set_offsets(np.column_stack([spike_times_all, spike_ids_all]))
             
             # Return the artists that were modified
             return [self.scatter]
@@ -401,7 +399,6 @@ class DynamicPVAPlot(DynamicPlot):
         except Exception as e:
             print(f"Error updating PVA plot: {e}")
             return [self.scatter]
-
 
 class DynamicPlotManager:
     """Manager for multiple dynamic plots"""
