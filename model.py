@@ -22,7 +22,9 @@ sys.path.append('Tools')
 from plottingTools import *
 from utils import *
 
-set_device('cpp_standalone', build_on_run=False)
+device = 'cpp_standalone'  # Set the device to C++ standalone
+if device == 'cpp_standalone':
+    set_device(device, build_on_run=False)
 # -
 
 # Simulation parameters
@@ -135,7 +137,8 @@ ringAttractor.ring_synapses_asym.vel_in = 0.0
 net.run(end_duration)
 # -
 
-device.build(directory = 'model_build', compile=True, run=True, debug=False, clean=False)
+if device == 'cpp_standalone':
+    device.build(directory = 'model_build', compile=True, run=True, debug=False, clean=False)
 
 # +
 from matplotlib.ticker import FuncFormatter

@@ -1,12 +1,14 @@
 from brian2 import *
 import numpy as np
 
+import os
 import sys
 sys.path.append('Neuron and Synapse Models')
 from neuronModels import *
-from ringAttractorTEMP import *
+from ringAttractorClass import *
 sys.path.append('Tools')
 from utils import *
+
 
 def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     """
@@ -26,6 +28,7 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     Returns:
         result: Any outcome from the simulation you wish to optimize (e.g., a cost metric)
     """
+    set_device('cpp_standalone', build_on_run=False)  # Use C++ standalone mode for performance
     # --- Simulation parameters ---
     defaultclock.dt = 0.1*ms
     num_neurons = 120
@@ -44,7 +47,7 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     I_ext_array = I0 * np.exp(-(d**2) / (2 * stimulus_width**2))
         
     # Create the neuron model equations using your custom LIF model
-    neuron_eq = Equations(LIF_xi_eq, tau=tau, V_rest=V_rest, sigma_noise=sigma_noise)
+    neuron_eq = Equations(LIF_xi_vel_eq, tau=tau, V_rest=V_rest, sigma_noise=sigma_noise)
     
     # Fixed intrinsic properties for now:
     Vth = -48*mV
@@ -85,6 +88,9 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
     ringAttractor.ring_pool.I_ext = I_ext_array * 0  # turn off input in second half
     net.run(input_off)
     
+    build_directory = os.path.join(os.getcwd(), 'Optimization Models', 'optimizationModel_build')
+    device.build(directory=build_directory, compile=True, run=True, debug=False)
+    
     firing_rates = compute_firing_rate(spikemon, num_neurons,
                                        start_time=input_on, end_time=sim_duration)
                                     #    start_time=0.95*sim_duration, end_time=sim_duration)
@@ -96,7 +102,7 @@ def opt_ring_attractor(params, stim_center=0, stim_width=0.5):
 
 if __name__ == '__main__':
     # Example: run with default parameters when this file is executed directly
-    default_params = {'tau': 10, 'sigma_noise': 1.0, 'sigma_exc': 0.125, 'sigma_inh': 0.1, 'g_exc': 1.0, 'g_inh': -1.0}
+    default_params = {'tau': 10, 'sigma_noise': 1.0, 'sigma_exc': 0.125, 'sigma_inh': 0.1, 'g_exc': 1.0*mV, 'g_inh': -1.0*mV, 'syn_profile': 'mexican_hat', 'autapse': True, 'glob_inh': False}
     GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(default_params,  stim_center=0, stim_width=0.5)   
     print("Ground Truth Center:", GT_center)
     print("Ground Truth Input:", GT_input)

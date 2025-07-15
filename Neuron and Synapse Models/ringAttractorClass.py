@@ -6,9 +6,9 @@ class RingAttractor():
                  neuron_eq, N=120,
                  Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms, # Neuron parameters
                  syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
-                 autapse=False,
+                 autapse = False,
                  glob_inh = False, w_inh = -0.15*mV,                 # Global Inhibitory neuron parameters
-                 mujoco=False, 
+                 mujoco = False, 
                  **syn_params):
         """
         Constructs a ring attractor network.
