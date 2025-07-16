@@ -1,7 +1,7 @@
 from brian2 import *
 import numpy as np
 
-import os
+import os # Print current working directory
 import sys
 sys.path.append('Neuron and Synapse Models')
 from neuronModels import *
