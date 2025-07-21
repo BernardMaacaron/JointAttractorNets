@@ -9,7 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from brian2 import *
-from Tools.utils import calculate_PVA
+
+from utils import calculate_PVA
 
 class DynamicPlot:
     """Base class for all dynamic plots"""
