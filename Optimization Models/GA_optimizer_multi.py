@@ -6,6 +6,7 @@ import pygad
 import time
 import sys
 import os
+
 import argparse
 import matplotlib.pyplot as plt
 
@@ -28,14 +29,17 @@ std_third_errors_working_specimens = []
 mean_gene_stddevs = []
 
 # Import the simulation function from your model file
-from optimization_model import opt_ring_attractor  # your simulation function
+from optimization_model_multi import RingAttractorSim
+# from optimization_model import opt_ring_attractor  # your simulation function
 # Also import any utility functions if needed (e.g., for computing firing rates, etc.)
 from utils import *
 
+result_path = os.path.join('Optimization Models', 'multiGA_results')
+GA_results_path = os.path.join(os.getcwd(), 'Optimization Models', 'GA_results')
 
 # Check if directory 'GA_results' exists, if not create it
-if not os.path.exists('GA_results'):
-    os.makedirs('GA_results')
+if not os.path.exists(GA_results_path):
+    os.makedirs(GA_results_path)
 
 # Create a unique directory for the current run based on the timestamp
 current_results_dirname = f"GA_results/GA_run_{time.strftime('%Y%m%d_%H%M%S')}"
@@ -310,9 +314,10 @@ def fitness_func(ga_instance, solution, solution_idx):
         raise ValueError("Unsupported connectivity profile. Choose 'mexican_hat' or 'cosine'.")
     
     try:
-        # Run the simulation.
+        # Run the simulation.        
+        GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = sim.do_run(result_path)
         # opt_ring_attractor returns: (GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude)
-        GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params, stim_center=stim_center, stim_width=stim_width)
+        # GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params, stim_center=stim_center, stim_width=stim_width)
         
         # Compute the circular standard deviation (spread) from the PVA magnitude.
         circular_std = np.sqrt(-2 * np.log(out_pva_magnitude + 1e-8))
@@ -393,8 +398,28 @@ else:
 if __name__ == '__main__':
 
     # Run the GA optimization. At the end, save all statistics once again, and create plots.
+    
+    set_device('cpp_standalone', build_on_run=False)
 
     print(f"Starting optimization for {connectivity_profile} connectivity profile")
+    
+    default_params = {
+    'tau'        : 10,
+    'sigma_noise': 1.0,
+    'sigma_exc'  : 0.125,
+    'sigma_inh'  : 0.1,
+    'g_exc'      : 1.0*mV,
+    'g_inh'      : -1.0*mV,
+    'syn_profile': 'mexican_hat',
+    'autapse'    : True,
+    'glob_inh'   : False
+    }
+    
+    stim_center = 0.0
+    stim_width  = 0.5
+    sim = RingAttractorSim(default_params,
+                           stim_center=stim_center,
+                           stim_width=stim_width)
     
     ga_instance.run()
 

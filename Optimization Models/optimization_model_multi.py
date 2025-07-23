@@ -83,7 +83,7 @@ class RingAttractorSim:
             start_time=self.input_on, end_time=self.t_stop
         )
         pva_angle, pva_mag = calculate_PVA(firing_rates, self.positions)
-        return firing_rates, pva_angle, pva_mag
+        return self.stim_center, self.I_ext_on, firing_rates, pva_angle, pva_mag
 
 
 
@@ -112,11 +112,11 @@ if __name__ == '__main__':          # ← critical guard for Windows/macOS
                            stim_width=stim_width)
 
     # ---------- run one realisation (can run many in a loop / pool) ----------
-    firing_rates, pva_angle, pva_magnitude = sim.do_run('results/GT_run')
+    GT_center, GT_input, firing_rates, pva_angle, pva_magnitude = sim.do_run('results/GT_run')
 
     # ---------- pretty print ----------
-    print("Ground‑Truth Center:", stim_center)
-    print("Ground‑Truth Input :", sim.I_ext_on)      # Gaussian bump you fed in
+    print("Ground‑Truth Center:", GT_center)
+    print("Ground‑Truth Input :", GT_input)      # Gaussian bump you fed in
     print("Observed Firing Rates:", firing_rates)
     print("PVA Angle :", pva_angle)
     print("PVA Magnitude:", pva_magnitude)
