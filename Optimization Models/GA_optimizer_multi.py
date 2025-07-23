@@ -18,7 +18,13 @@ previous_gen_start_time = start_time
 # and the variation within the population over time (mean of standard deviations of the genes).
 best_errors = []
 mean_errors_working_specimens = []
+mean_first_errors_working_specimens = []
+mean_second_errors_working_specimens = []
+mean_third_errors_working_specimens = []
 std_errors_working_specimens = []
+std_first_errors_working_specimens = []
+std_second_errors_working_specimens = []
+std_third_errors_working_specimens = []
 mean_gene_stddevs = []
 
 # Import the simulation function from your model file
@@ -47,15 +53,12 @@ parser.add_argument('--num_generations', type=int, default=500, help='Number of 
 parser.add_argument('--num_parents_mating', type=int, default=50, help='Number of parents mating in each generation.')
 parser.add_argument('--mutation_type', type=str, default='adaptive', choices=['random', 'swap', 'inversion', 'scramble', 'adaptive', ], help='Type of mutation to use in the genetic algorithm.') # Options: "random", "swap", "inversion", "scramble", "adaptive", or a custom function
 parser.add_argument('--mutation_probability', type=float, default=[0.5, 0.25], nargs=2, help='Probability of mutation for each gene. If using adaptive mutation, this should be a list of two values: the first for lower-than-average fitness solutions, the second for higher-than-average fitness solutions. If using random mutation, this should be a single value for all solutions.')
-parser.add_argument('--parent_selection_type', type=str, default='rws', choices=['sss', 'rws', 'sus', 'rank', 'tournament', 'random'], help='Parent selection method for the genetic algorithm.')
+parser.add_argument('--parent_selection_type', type=str, default='tournament_nsga2', choices=['nsga2', 'tournament_nsga2'], help='Parent selection method for the genetic algorithm.')
 parser.add_argument('--connectivity_profile', type=str, default='mexican_hat', choices=['mexican_hat', 'cosine'], help='Connectivity profile to optimize.')
 parser.add_argument('--crossover_type', type=str, default='single_point', choices=['single_point', 'two_points', 'uniform', 'scattered'], help='Crossover type for the genetic algorithm.')
 parser.add_argument('--keep_elitism', type=int, default=1, help='Number of best solutions to keep in the next generation.')
 parser.add_argument('--rand_mut_min_val', type=float, default=-0.1, help='Minimum value for random mutation.')
 parser.add_argument('--rand_mut_max_val', type=float, default=0.1, help='Maximum value for random mutation.')
-parser.add_argument('--w_center', type=float, default=0.3, help='Weight for center error in composite error calculation.')
-parser.add_argument('--w_Zscore', type=float, default=0.2, help='Weight for angular Z-score in composite error calculation.')
-parser.add_argument('--w_nmse', type=float, default=0.5, help='Weight for NMSE in composite error calculation.')
 parser.add_argument('--initial_ranges_mex', type=float, nargs=8, default=[0.05, 0.2, 0.1, 0.3, 0.5, 1.0, -1.0, -0.3], help='Initial ranges for Mexican hat connectivity profile: sigma_exc_min, sigma_exc_max, sigma_inh_min, sigma_inh_max, g_exc_min, g_exc_max, g_inh_min, g_inh_max.')
 parser.add_argument('--stim_center', type=float, default=1.571, help='Center of the stimulus for the ring attractor model.')
 parser.add_argument('--stim_width', type=float, default=0.5, help='Width of the stimulus for the ring attractor model.')
@@ -78,10 +81,6 @@ crossover_type = args.crossover_type
 keep_elitism = args.keep_elitism
 rand_mut_min_val = args.rand_mut_min_val
 rand_mut_max_val = args.rand_mut_max_val
-
-w_center = args.w_center
-w_Zscore = args.w_Zscore
-w_nmse = args.w_nmse
 
 initial_ranges_mex = args.initial_ranges_mex
 
@@ -106,9 +105,6 @@ with open(f"{current_results_dirname}/exp_params.txt", "w") as f:
     f.write(f"Keep elitism: {keep_elitism}\n")
     f.write(f"Random mutation min value: {rand_mut_min_val}\n")
     f.write(f"Random mutation max value: {rand_mut_max_val}\n")
-    f.write(f"Weight for center error: {w_center}\n")
-    f.write(f"Weight for angular Z-score: {w_Zscore}\n")
-    f.write(f"Weight for NMSE: {w_nmse}\n")
     f.write(f"Initial ranges for Mexican hat connectivity profile: {initial_ranges_mex}\n")
 
 
@@ -168,6 +164,12 @@ def on_generation(ga_instance):
     global best_errors
     global mean_errors_working_specimens
     global std_errors_working_specimens
+    global mean_first_errors_working_specimens
+    global mean_second_errors_working_specimens
+    global mean_third_errors_working_specimens
+    global std_first_errors_working_specimens
+    global std_second_errors_working_specimens
+    global std_third_errors_working_specimens
     global current_results_dirname
     global gene_0_stddevs, gene_1_stddevs, gene_2_stddevs, gene_3_stddevs
     global mean_gene_stddevs
@@ -205,22 +207,63 @@ def on_generation(ga_instance):
     # The fitness function is set up such that a negative fitness is given
     # to specimens that fail the simulation for some reason (e.g., NaN values). 
     pop_fitnesses = np.array(ga_instance.last_generation_fitness)
-    positive_fitnesses = pop_fitnesses[pop_fitnesses >= 0]
-    negative_fitnesses = pop_fitnesses[pop_fitnesses < 0]
+    positive_fitnesses = pop_fitnesses[pop_fitnesses[:, 0] >= 0]
+    negative_fitnesses = pop_fitnesses[pop_fitnesses[:, 0] < 0]
 
     # Calculate the errors for working specimens
     # Simply the inverse of the fitness value calculation as can be seen in the fitness_func.
-    working_errors = (1.0 / positive_fitnesses) - 1e-8
-    mean_working_error = np.mean(working_errors)
-    std_working_error = np.std(working_errors)
-    mean_errors_working_specimens.append(mean_working_error)
-    std_errors_working_specimens.append(std_working_error)
+    first_fitness_vals = positive_fitnesses[:, 0]
+    first_errors = (1.0 / first_fitness_vals) - 1e-8
+    mean_first_errors = np.mean(first_errors)
+    std_first_errors = np.std(first_errors)
+    mean_first_errors_working_specimens.append(mean_first_errors)
+    std_first_errors_working_specimens.append(std_first_errors)
+    second_fitness_vals = positive_fitnesses[:, 1]
+    second_errors = (1.0 / second_fitness_vals) - 1e-8
+    mean_second_errors = np.mean(second_errors)
+    std_second_errors = np.std(second_errors)
+    mean_second_errors_working_specimens.append(mean_second_errors)
+    std_second_errors_working_specimens.append(std_second_errors)
+    third_fitness_vals = positive_fitnesses[:, 2]
+    third_errors = (1.0 / third_fitness_vals) - 1e-8
+    mean_third_errors = np.mean(third_errors)
+    std_third_errors = np.std(third_errors)
+    mean_third_errors_working_specimens.append(mean_third_errors)
+    std_third_errors_working_specimens.append(std_third_errors)
+
+
+    mean_specimen_fitnesses = np.mean(np.stack([first_fitness_vals, second_fitness_vals, third_fitness_vals]), axis=0)
+
+
+    mean_specimen_errors = np.mean(np.stack([first_errors, second_errors, third_errors]), axis=0)
+    mean_errors = np.mean(mean_specimen_errors)
+    std_errors = np.std(mean_specimen_errors)
+    mean_errors_working_specimens.append(mean_errors)
+    std_errors_working_specimens.append(std_errors)
+
+    # mean_fitness_vals = np.mean(np.stack([first_fitness_vals, second_fitness_vals, third_fitness_vals]), axis=0)
+    # errors = (1.0 / mean_fitness_vals) - 1e-8
+    # mean_errors = np.mean(errors)
+    # std_errors = np.std(errors)
+    # mean_errors_working_specimens.append(mean_errors)
+    # std_errors_working_specimens.append(std_errors)
+    
 
     np.savetxt(f"{current_results_dirname}/mean_errors_working_specimens.txt", np.array(mean_errors_working_specimens))
     np.savetxt(f"{current_results_dirname}/std_errors_working_specimens.txt", np.array(std_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/mean_first_errors_working_specimens.txt", np.array(mean_first_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/std_first_errors_working_specimens.txt", np.array(std_first_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/mean_second_errors_working_specimens.txt", np.array(mean_second_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/std_second_errors_working_specimens.txt", np.array(std_second_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/mean_third_errors_working_specimens.txt", np.array(mean_third_errors_working_specimens))
+    np.savetxt(f"{current_results_dirname}/std_third_errors_working_specimens.txt", np.array(std_third_errors_working_specimens))
 
-    print(f"Generation mean FITNESS (working solutions): {np.mean(positive_fitnesses):.4f} +/- {np.std(positive_fitnesses):.4f} | {len(positive_fitnesses)} working, {len(negative_fitnesses)} failed solutions")
-    print(f"Generation mean ERROR (working solutions): {mean_working_error:.4f} +/- {std_working_error:.4f}")
+
+    print(f"Generation mean FITNESS (working solutions): {np.mean(mean_specimen_fitnesses):.4f} +/- {np.std(mean_specimen_fitnesses):.4f} | {len(positive_fitnesses)} working, {len(negative_fitnesses)} failed solutions")
+    print(f"Generation mean ERROR (working solutions): {mean_errors:.4f} +/- {std_errors:.4f}")
+    print(f"      mean cwce: {mean_first_errors:.4f} +/- {std_first_errors:.4f}")
+    print(f"      mean angular Z-score: {mean_second_errors:.4f} +/- {std_second_errors:.4f}")
+    print(f"      mean NMSE: {mean_third_errors:.4f} +/- {std_third_errors:.4f}")
     print(f"Generation mean gene standard deviations: {np.mean(gene_std_devs):.4f}")
 
     solution, solution_fitness, solution_idx = ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)
@@ -229,12 +272,15 @@ def on_generation(ga_instance):
     
     gens_completed = ga_instance.generations_completed
     with open(f"{current_results_dirname}/exp_results.txt", "a") as f:
-        f.write(f"Generation {gens_completed} - Best composite error: {1/(solution_fitness) - 1e-8} (sigma_exc: {solution[0]}, sigma_inh: {solution[1]}, g_exc: {solution[2]} mV, g_inh: {solution[3]} mV)\n")
+        f.write(f"Generation {gens_completed} - Best specimen's errors: {1/(solution_fitness) - 1e-8} (sigma_exc: {solution[0]}, sigma_inh: {solution[1]}, g_exc: {solution[2]} mV, g_inh: {solution[3]} mV)\n")
         f.write(f"Generation mean FITNESS: {np.mean(positive_fitnesses):.4f} +/- {np.std(positive_fitnesses):.4f} | {len(positive_fitnesses)} working, {len(negative_fitnesses)} failed solutions\n")
-        f.write(f"Generation mean ERROR (working solutions): {mean_working_error:.4f} +/- {std_working_error:.4f}\n")
+        f.write(f"Generation mean ERROR (working solutions): {mean_errors:.4f} +/- {std_errors:.4f}\n")
+        f.write(f"      mean cwce: {mean_first_errors:.4f} +/- {std_first_errors:.4f}\n")
+        f.write(f"      mean angular Z-score: {mean_second_errors:.4f} +/- {std_second_errors:.4f}\n")
+        f.write(f"      mean NMSE: {mean_third_errors:.4f} +/- {std_third_errors:.4f}\n")
         f.write(f"Generation mean gene standard deviations: {np.mean(gene_std_devs):.4f}\n")
         f.write(f"Generation time: {time.time() - previous_gen_start_time:.2f} seconds\n")
-    print(f"Generation {gens_completed} - Best composite error: {1/(solution_fitness) - 1e-8} (sigma_exc: {solution[0]}, sigma_inh: {solution[1]}, g_exc: {solution[2]} mV, g_inh: {solution[3]} mV)")
+    print(f"Generation {gens_completed} - Best specimen's errors: {1/(solution_fitness) - 1e-8} (sigma_exc: {solution[0]}, sigma_inh: {solution[1]}, g_exc: {solution[2]} mV, g_inh: {solution[3]} mV)")
     print(f"Generation time: {time.time() - previous_gen_start_time:.2f} seconds\n")
 
     previous_gen_start_time = time.time()
@@ -282,23 +328,31 @@ def fitness_func(ga_instance, solution, solution_idx):
         # Compute the NMSE between the observed firing rates and the ideal Gaussian profile.
         nmse = compute_nmse_normalized(out_rates, GT_input, norm_type='max')
         
-        # Combine the errors into one composite score.
-        # Adjust weights to prioritize center accuracy if desired
-        composite_error = w_center * cwce + w_Zscore * angular_Zscore + w_nmse * nmse
+        # Combine the errors into one composite score, just to be able to
+        # quickly check NaN or infinite values.
+        composite_error = cwce + angular_Zscore + nmse
 
-        # Check if the composite error is NaN or infinite. In that case, set it to a very high value,
-        # so that the fitness value will be very low.
+        # Check if the composite error is NaN or infinite. In that case, set all errors to -1
         if np.isnan(composite_error) or np.isinf(composite_error):
-            composite_error = -1
+            cwce = -1
+            angular_Zscore = -1
+            nmse = -1
+            print(f"Composite error is NaN or infinite for solution {solution_idx}. Setting all errors to -1.")
+            
 
     # For now, if there is any exception raised, just give very low fitness value to this solution.
     except Exception as e:
-        composite_error = -1
+        cwce = -1
+        angular_Zscore = -1
+        nmse = -1
+        print(f"Exception occurred for solution {solution_idx}: {e}. Setting all errors to -1.")
 
 
-    fitness_value = 1.0 / (composite_error + 1e-8)  # Avoid division by zero
+    fitness_cwce = 1 / (cwce + 1e-8)
+    fitness_angular_Zscore = 1 / (angular_Zscore + 1e-8)
+    fitness_nmse = 1 / (nmse + 1e-8)
 
-    return fitness_value
+    return [fitness_cwce, fitness_angular_Zscore, fitness_nmse]
 
 
 # Create the GA instance with the specified parameters
@@ -348,7 +402,7 @@ if __name__ == '__main__':
     solution, solution_fitness, solution_idx = ga_instance.best_solution(pop_fitness=ga_instance.last_generation_fitness)
     
     print(f"""Best solution found:
-    composite error: {1/solution_fitness}
+    errors: {1/solution_fitness}
     sigma_exc: {solution[0]}
     sigma_inh: {solution[1]}
     g_exc: {solution[2]} mV
@@ -390,6 +444,42 @@ if __name__ == '__main__':
     plt.title('Mean Errors Over Generations')
     plt.legend()
     plt.savefig(f"{current_results_dirname}/mean_errors.png")
+
+    plt.figure()
+    plt.plot(mean_first_errors_working_specimens, label='Mean CWCE (Working Specimens)')
+    plt.fill_between(range(len(mean_first_errors_working_specimens)), 
+                     np.array(mean_first_errors_working_specimens) - np.array(std_first_errors_working_specimens), 
+                     np.array(mean_first_errors_working_specimens) + np.array(std_first_errors_working_specimens), 
+                     alpha=0.2)
+    plt.xlabel('Generation')
+    plt.ylabel('Mean CWCE')
+    plt.title('Mean CWCE Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/mean_first_errors.png")
+
+    plt.figure()
+    plt.plot(mean_second_errors_working_specimens, label='Mean Angular Z-score (Working Specimens)')
+    plt.fill_between(range(len(mean_second_errors_working_specimens)), 
+                     np.array(mean_second_errors_working_specimens) - np.array(std_second_errors_working_specimens), 
+                     np.array(mean_second_errors_working_specimens) + np.array(std_second_errors_working_specimens), 
+                     alpha=0.2)
+    plt.xlabel('Generation')
+    plt.ylabel('Mean Angular Z-score')
+    plt.title('Mean Angular Z-score Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/mean_second_errors.png")
+
+    plt.figure()
+    plt.plot(mean_third_errors_working_specimens, label='Mean NMSE (Working Specimens)')
+    plt.fill_between(range(len(mean_third_errors_working_specimens)), 
+                     np.array(mean_third_errors_working_specimens) - np.array(std_third_errors_working_specimens), 
+                     np.array(mean_third_errors_working_specimens) + np.array(std_third_errors_working_specimens), 
+                     alpha=0.2)
+    plt.xlabel('Generation')
+    plt.ylabel('Mean NMSE')
+    plt.title('Mean NMSE Over Generations')
+    plt.legend()
+    plt.savefig(f"{current_results_dirname}/mean_third_errors.png")
 
     plt.figure()
     plt.plot(mean_gene_stddevs, label='Mean Gene Standard Deviations')
