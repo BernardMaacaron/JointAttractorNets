@@ -42,7 +42,7 @@ if not os.path.exists(GA_results_path):
     os.makedirs(GA_results_path)
 
 # Create a unique directory for the current run based on the timestamp
-current_results_dirname = f"GA_results/GA_run_{time.strftime('%Y%m%d_%H%M%S')}"
+current_results_dirname = os.path.join(GA_results_path, f"GA_run_{time.strftime('%Y%m%d_%H%M%S')}")
 if not os.path.exists(current_results_dirname):
     os.makedirs(current_results_dirname)
 
@@ -314,8 +314,10 @@ def fitness_func(ga_instance, solution, solution_idx):
         raise ValueError("Unsupported connectivity profile. Choose 'mexican_hat' or 'cosine'.")
     
     try:
-        # Run the simulation.        
-        GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = sim.do_run(result_path)
+        # Run the simulation.
+        gen_index = ga_instance.generations_completed
+        result_path_per_gen = os.path.join(result_path, f'Generation_{gen_index}')
+        GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = sim.do_run(result_path_per_gen)
         # opt_ring_attractor returns: (GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude)
         # GT_center, GT_input, out_rates, out_pva_angle, out_pva_magnitude = opt_ring_attractor(params, stim_center=stim_center, stim_width=stim_width)
         
