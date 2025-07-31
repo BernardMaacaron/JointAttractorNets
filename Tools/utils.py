@@ -1,7 +1,8 @@
 from brian2 import *
+from brian2.parsing.sympytools import str_to_sympy
 import sys
 from lmfit import Model, Parameters
-
+from sympy.plotting import plot as sympy_plot
 
 class ProgressBar(object):
     def __init__(self, toolbar_width=40):
@@ -203,3 +204,31 @@ def curveFit_rectPower(firing_rates, input_data, V0=None):
     return result, result.best_values
 
 ##################################################
+# Analytical Evaluations
+##################################################
+#TODO: Finalize this function
+def analytical_FiringRate(model: str, variableRange): #Work in Progress
+    """
+    Compute the analytical firing rate for a given neuron model.
+    Neuron model has to be a brian2 neuron equation of the form.
+    
+    Parameters:
+        model (str): Neuron model equation.
+        refractory (float): Refractory period in seconds.
+    """
+    return "This function is a work in progress and not yet implemented."
+
+    ##### Prepare and validate equations
+    if isinstance(model, str):
+        model = Equations(model)
+    if not isinstance(model, Equations):
+        raise TypeError(
+            "model has to be a string or an Equations "
+            f"object, is '{type(model)}' instead."
+        )
+    for eq in model.diff_eq_expressions:
+        for var in eq:
+            if not isinstance(var, str):
+                symEq = str_to_sympy(str(var))
+                sympy_plot(symEq)
+
