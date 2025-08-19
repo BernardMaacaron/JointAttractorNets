@@ -734,8 +734,8 @@ def _set_bias(model, chip_id : int, core_id : int, bias_name : str, bias_value, 
     #coarse_value, fine_value = bias_value
 
     #coarse_value, fine_value = get_coarse_and_fine_from_linear_bias(bias_value)
-    print(bias_value)
-    print(type(bias_value))
+    # print(bias_value)
+    # print(type(bias_value))
     
     if isinstance(bias_value, tuple):
         coarse_value, fine_value = bias_value
