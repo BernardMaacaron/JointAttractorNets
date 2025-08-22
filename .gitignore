@@ -185,3 +185,5 @@ samna_info.json
 spikes.txt
 # This file is used to store spike data in standalone mode.
 # It is generated during the simulation and should not be manually edited.
+
+*results/
