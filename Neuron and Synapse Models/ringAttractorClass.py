@@ -1,12 +1,15 @@
 from neuronModels import *
 from brian2 import *
 
+sys.path.append('Tools')
+from plottingTools import spectrumPlot
+
 class RingAttractor():
     def __init__(self,
                  neuron_eq, N=120,
                  Vth=-48*mV, V_reset=-80*mV, refractory_period=5*ms, # Neuron parameters
                  syn_profile='mexican_hat',                          # Choose connectivity profile: 'mexican_hat', 'gaussian', or 'cosine'
-                 autapse = False,
+                 autapse = False, normalized = False,
                  glob_inh = False, w_inh = -0.15*mV,                 # Global Inhibitory neuron parameters
                  mujoco = False, 
                  **syn_params):
@@ -29,16 +32,17 @@ class RingAttractor():
               For 'cosine':      g_cosine (default 0.1*mV).
         """
         
-        self.N = N
+        self.numNeurons = N
         self.syn_profile = syn_profile.lower()
         self.autapse = autapse
+        self.normalized = normalized
         self.glob_inh = glob_inh
         self.w_inh = w_inh
         self.BrianObjects = []
 
 
         # Create neuron positions uniformly along the ring [0, 2*pi)
-        self.positions = np.linspace(0, 2*pi, N, endpoint=False)
+        self.positions = np.linspace(0, 2*pi, self.numNeurons, endpoint=False)
                                      
         if mujoco: 
             reset_string = '''V = V_reset
@@ -46,7 +50,7 @@ class RingAttractor():
         else:
             reset_string = 'V = V_reset'
             
-        self.ring_pool = NeuronGroup(self.N, neuron_eq, threshold = 'V > Vth', reset = reset_string, refractory=refractory_period,
+        self.ring_pool = NeuronGroup(self.numNeurons, neuron_eq, threshold = 'V > Vth', reset = reset_string, refractory=refractory_period,
                                     method="euler", name="ring_neurons")
         self.ring_pool.V = V_reset
         
@@ -84,6 +88,12 @@ class RingAttractor():
         else:
             raise ValueError("Unsupported syn_profile. Choose 'mexican_hat', 'gaussian', or 'cosine'.")
         
+        if self.normalized == True:
+            num_neurons = self.numNeurons
+            self.connectivity_eq = "(" + self.connectivity_eq + ") / num_neurons"
+            self.connectivityAsym_eq = "(" + self.connectivityAsym_eq + ") / num_neurons"
+            self.w_inh = self.w_inh / num_neurons
+
         # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
         self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
                                 on_pre='I_syn_post += w', name='ring_synapses')
@@ -131,3 +141,10 @@ class RingAttractor():
           
         
         self.BrianObjects.extend([self.ring_pool, self.ring_synapses, self.ring_synapses_asym])
+
+    def evaluateStability(self, plot = True):
+        WeightMatrix = np.reshape(np.array(self.ring_synapses.w_), (self.numNeurons, self.numNeurons))
+        eigenvalues = np.linalg.eigvals(WeightMatrix)
+        if plot:
+            spectrumPlot(eigenvalues)
+        return eigenvalues

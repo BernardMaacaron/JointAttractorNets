@@ -23,43 +23,80 @@ class ProgressBar(object):
                 self.ticks = ticks_needed
         if complete == 1.0:
             sys.stdout.write("\n")
-            
-            
-def compute_firing_rate(spikemon, n_neurons, start_time=None, end_time=None, total_duration=None):
+
+def extract_spikeData(spike_input):
     """
-    Compute the firing rate for each neuron from a Brian2 SpikeMonitor.
+    Helper function to extract spike data from either a Brian2 SpikeMonitor or a tuple.
+    
+    Parameters:
+    ----------
+    spike_input : Brian2 SpikeMonitor or tuple
+        Either a SpikeMonitor object or a tuple of (spike_ids, spike_times)
+        
+    Returns:
+    -------
+    tuple : (spike_ids, spike_times, is_quantity)
+        - spike_ids: array of neuron indices
+        - spike_times: array of spike times (in seconds or as Brian2 Quantity)
+        - is_quantity: boolean indicating if spike_times is a Brian2 Quantity
+    """
+    if hasattr(spike_input, 't') and hasattr(spike_input, 'i'):
+        # It's a Brian2 SpikeMonitor
+        return spike_input.i, spike_input.t, True
+    else:
+        # It's a tuple of (spike_ids, spike_times)
+        spike_ids, spike_times = spike_input
+        # Check if spike_times is a Brian2 Quantity
+        hasBrianUnit = not is_dimensionless(spike_times)
+        print("spike_times is a Brian2 Quantity:", hasBrianUnit)
+        return spike_ids, spike_times, hasBrianUnit
+
+def computeFiringRate(spikemon, n_neurons, start_time=None, end_time=None, total_duration=None):
+    """
+    Compute the firing rate for each neuron from a Brian2 SpikeMonitor or tuple of (spike_ids, spike_times).
 
     Parameters:
-        spikemon : Brian2 SpikeMonitor
-            Monitor containing spike data.
+        spikemon : Brian2 SpikeMonitor or tuple
+            Monitor containing spike data or a tuple of (spike_ids, spike_times).
+        n_neurons : int
+            Number of neurons in the network.
         start_time : float or Brian2 Quantity, optional
             Start time (in seconds) for firing rate calculation.
         end_time : float or Brian2 Quantity, optional
             End time (in seconds) for firing rate calculation.
-        total_duration : float, optional
-            Duration in seconds to use if no time window is provided.
-            If not provided, the maximum spike time is used.
+        total_duration : float or Brian2 Quantity, optional
+            Duration to use if no time window is provided.
 
     Returns:
         numpy.ndarray
             Array of firing rates (Hz) for each neuron.
     """
-    # Check if the spike monitor is empty
-    if len(spikemon.t) == 0.0:
+    # Use the helper function to extract spike data
+    spike_ids, spike_times, hasBrianUnit = extract_spikeData(spikemon)
+    
+    # Check if there are no spikes
+    if len(spike_times) == 0.0:
         return np.zeros(n_neurons)
-        
-    spike_times = spikemon.t/second
-    spike_indices = spikemon.i  # Neuron indices that spiked
+    
+    # Convert to seconds if needed
+    if hasBrianUnit:
+        spike_times = spike_times/second
+        if start_time is not None:
+            start_time = start_time/second
+        if end_time is not None:
+            end_time = end_time/second
+        if total_duration is not None:
+            total_duration = total_duration/second
     
     # Determine time window
     if (start_time is not None) and (end_time is not None):
-        window_mask = (spike_times >= start_time/second) & (spike_times < end_time/second)
-        filtered_indices = spike_indices[window_mask]
+        window_mask = (spike_times >= start_time) & (spike_times < end_time)
+        filtered_indices = spike_ids[window_mask]
         duration_used = end_time - start_time
     else:
-        filtered_indices = spike_indices
+        filtered_indices = spike_ids
         if total_duration is not None:
-            duration_used = total_duration/second
+            duration_used = total_duration
         elif len(spike_times) > 0:
             duration_used = np.max(spike_times)
     
@@ -71,6 +108,47 @@ def compute_firing_rate(spikemon, n_neurons, start_time=None, end_time=None, tot
     rates[unique_indices] = spike_counts / duration_used
     
     return rates
+
+def computeInstRate(spikemon, numNeurons, meanISI=True):
+    """
+    Compute the instantaneous firing rate for each neuron from a Brian2 SpikeMonitor.
+
+    Parameters:
+        spikemon : Brian2 SpikeMonitor
+            Monitor containing spike data.
+        numNeurons : int
+            Number of neurons in the network.
+        meanISI : bool
+            If True, return the mean interspike interval (ISI) as the instantaneous firing rate.
+
+    Returns:
+        numpy.ndarray
+            Array of instantaneous firing rates (Hz) for each neuron.
+    """
+
+    spike_ids, spike_times, hasBrianUnit = extract_spikeData(spikemon)
+    
+    # Check if the spike monitor is empty
+    if len(spike_times) == 0.0:
+        return np.zeros(numNeurons)
+
+    if hasBrianUnit:
+        spike_times = spike_times/second
+        
+    # Count spikes for each neuron
+    rates = [0.0] * numNeurons
+    unique_indices, spike_counts = np.unique(spike_ids, return_counts=True)
+    
+    
+    for index in unique_indices:
+        # Find the interspike interval (ISI)
+        isi = np.diff(spike_times[spike_ids == index])
+        if len(isi) > 0:
+            if meanISI:
+                rates[index] = 1.0 / np.mean(isi)
+            else:
+                rates[index] = 1 / isi
+    return np.asarray(rates)
 
 def calculate_PVA(firing_rates, positions):
     """
@@ -94,26 +172,6 @@ def calculate_PVA(firing_rates, positions):
     pva_magnitude = np.abs(weighted_sum) / total_rate
     return pva_angle, pva_magnitude
 
-def calculate_ISI(spikemon, n_neurons):
-    """
-    Calculate the Inter-Spike Intervals (ISI) for each neuron.
-
-    Parameters:
-        spikemon : Brian2 SpikeMonitor
-            Monitor containing spike data.
-        n_neurons : int
-            Number of neurons in the network.
-
-    Returns:
-        list of numpy.ndarray
-            List containing ISI arrays for each neuron.
-    """
-    isi_list = []
-    for i in range(n_neurons):
-        neuron_spikes = spikemon.t[spikemon.i == i]
-        isi = np.diff(neuron_spikes) / second  # Convert to seconds
-        isi_list.append(isi)
-    return isi_list
 
 
 #################################################

@@ -1,32 +1,8 @@
 import matplotlib.pyplot as plt
 from brian2 import *
-from utils import calculate_PVA
+from utils import *
 
-def extract_spike_data(spike_input):
-    """
-    Helper function to extract spike data from either a Brian2 SpikeMonitor or a tuple.
-    
-    Parameters:
-    ----------
-    spike_input : Brian2 SpikeMonitor or tuple
-        Either a SpikeMonitor object or a tuple of (spike_ids, spike_times)
-        
-    Returns:
-    -------
-    tuple : (spike_ids, spike_times, is_quantity)
-        - spike_ids: array of neuron indices
-        - spike_times: array of spike times (in seconds or as Brian2 Quantity)
-        - is_quantity: boolean indicating if spike_times is a Brian2 Quantity
-    """
-    if hasattr(spike_input, 't') and hasattr(spike_input, 'i'):
-        # It's a Brian2 SpikeMonitor
-        return spike_input.i, spike_input.t, True
-    else:
-        # It's a tuple of (spike_ids, spike_times)
-        spike_ids, spike_times = spike_input
-        # Check if spike_times is a Brian2 Quantity
-        is_quantity = hasattr(spike_times, 'dimensionality')
-        return spike_ids, spike_times, is_quantity
+
 
 def plot_on_circle(x, y, 
                    title="Circular Plot",
@@ -52,7 +28,7 @@ def plot_on_circle(x, y,
         title_pad (float): Extra padding (in points) between the title and the axes.
         title_y (float): Vertical position for the title (axes fraction, default is above the axes).
         
-        r_label (str): Label for the radial coordinate.
+        r_label (str):
         label_pad (float): Extra padding (in points) between the label and the axes.
         theta_ticks (tuple, optional): A tuple (ticks, tick_labels) to customize the angular ticks.
         
@@ -74,7 +50,7 @@ def plot_on_circle(x, y,
         line_kwargs = {'lw': 2}
     
     # Map x to radians in the range [0, 2pi]
-    theta = 2 * np.pi * (x - np.min(x)) / (np.max(x) - np.min(x))     # NOTE: This doesn't use np.deg2rad to generalize to all type of values not just degrees.
+    theta = 2 * np.pi * (x - np.min(x)) / (np.max(x) - np.min(x))     # NOTE: This doesn't use np.deg
 
     
     # Create polar subplot with custom figure size
@@ -139,7 +115,7 @@ def visualise_connectivity(Synapses):
 
 def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highlight',
                 highlight_alpha=0.2, highlight_color='yellow', lines_style='--', duration=None,
-                num_neurons = 120, y_axisFull=False):
+                num_neurons=120, y_axisFull=False):
     """Create a raster plot of spike times with optional stimulus visualization
     
     Parameters:
@@ -175,8 +151,8 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
-    # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
+    # Extract spike data using the helper function
+    spike_ids, spike_times, is_quantity = extract_spikeData(spikemon)
     
     # Convert spike_times to seconds if it's a Brian2 Quantity
     if is_quantity:
@@ -224,59 +200,128 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     
     return ax
 
-def firing_rate_profile(spikemon, positions, duration, ax=None):
+def firing_rate_profile(spikemon, positions, duration, ax=None, instantRate=False):
     """Calculate and plot firing rates across positions
     
     Parameters:
     ----------
     spikemon : Brian2 SpikeMonitor or tuple
         Monitor containing spike data, or a tuple of (spike_ids, spike_times)
-        where spike_ids is an array of neuron indices and spike_times is an array of 
-        corresponding spike times (in seconds or as Brian2 Quantity objects)
     positions : array
         Position of each neuron on the ring
     duration : Brian2 Quantity
         Total simulation duration
     ax : matplotlib axis, optional
         Axis to plot on. If None, a new figure will be created
+    instantRate : bool, optional
+        If True, uses computeInstRate, otherwise uses computeFiringRate
         
     Returns:
     -------
-    spike_rates : dict
-        Dictionary containing 'first_half' and 'second_half' firing rates
+    firing_rate : array
+        Array of firing rates for each neuron
     ax : matplotlib axis
         The axis with the plot
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
-    # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
-    
-    # Ensure spike_times is a Brian2 Quantity for consistency
-    if not is_quantity:
-        spike_times = spike_times * second
-    
-    num_indices = len(positions)
-    # Calculate firing rates
-    spike_count = np.zeros(num_indices)
-    
-    for i, t in zip(spike_ids, spike_times):
-        spike_count[i] += 1
-    
-    firing_rate = spike_count / (duration/second)
+    # Calculate firing rates using either computeFiringRate or computeInstRate
+    num_neurons = len(positions)
+    if instantRate:
+        firing_rate = computeInstRate(spikemon, num_neurons)
+    else:
+        firing_rate = computeFiringRate(spikemon, num_neurons, total_duration=duration)
     
     # Plot firing rates
     ax.plot(positions, firing_rate, marker='o', linestyle='-')
     ax.set_xlabel('Position (radians)')
-    ax.set_ylabel('Firing rate (Hz)')
-    ax.set_title('Firing Rate Profile')
-    # Conditionally add legend only if there are legend entries.
+    if instantRate:
+        ax.set_ylabel('Instantaneous Firing rate (Hz)')
+        ax.set_title('Instant. Firing Rate Profile')
+    else:
+        ax.set_ylabel('Firing rate (Hz)')
+        ax.set_title('Firing Rate Profile')
+    
+    # Conditionally add legend only if there are legend entries
     handles, labels = ax.get_legend_handles_labels()
     if handles:
         ax.legend()
     
     return firing_rate, ax
+
+def firing_rate_over_time(spikemon, num_neurons):
+    """
+    Calculate instantaneous firing rates using NumPy arrays for efficiency
+    
+    Parameters:
+    ----------
+    spikemon : Brian2 SpikeMonitor or tuple
+        Monitor containing spike data
+    num_neurons : int
+        Number of neurons
+        
+    Returns:
+    -------
+    neuron_ids : array
+        Indices of neurons that fired
+    times : array
+        Times at which rates are calculated (s)
+    rates : array
+        Instantaneous firing rates (Hz)
+    """
+    # Extract spike data
+    spike_ids, spike_times, has_units = extract_spikeData(spikemon)
+    
+    if len(spike_times) == 0:
+        return np.array([]), np.array([]), np.array([])
+    
+    # Convert to seconds if needed
+    if has_units:
+        spike_times = spike_times/second
+    
+    # First, count how many ISIs we'll have for each neuron
+    isi_counts = np.zeros(num_neurons, dtype=int)
+    for n_id in range(num_neurons):
+        n_spikes = np.sum(spike_ids == n_id)
+        if n_spikes > 1:  # Need at least 2 spikes for ISI
+            isi_counts[n_id] = n_spikes - 1
+    
+    # Total number of ISIs (and thus output entries)
+    total_entries = np.sum(isi_counts)
+    if total_entries == 0:
+        return np.array([]), np.array([]), np.array([])
+    
+    # Pre-allocate arrays
+    all_neuron_ids = np.zeros(total_entries, dtype=int)
+    all_times = np.zeros(total_entries)
+    all_rates = np.zeros(total_entries)
+    
+    # Fill the arrays
+    idx = 0
+    for n_id in range(num_neurons):
+        if isi_counts[n_id] > 0:
+            # Get spike times for this neuron
+            mask = spike_ids == n_id
+            neuron_spike_times = spike_times[mask]
+            
+            # Calculate ISIs and rates
+            isis = np.diff(neuron_spike_times)
+            inst_rates = 1.0 / isis
+            
+            # Number of rates for this neuron
+            n_rates = len(inst_rates)
+            
+            # Add to output arrays (at appropriate indices)
+            slice_end = idx + n_rates
+            all_neuron_ids[idx:slice_end] = n_id
+            all_times[idx:slice_end] = neuron_spike_times[1:]  # Skip first spike
+            all_rates[idx:slice_end] = inst_rates
+            
+            # Update index
+            idx += n_rates
+    
+    return all_neuron_ids, all_times, all_rates
 
 def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
     """
@@ -350,7 +395,7 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
         fig, ax = plt.subplots(figsize=(10, 4))
     
     # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
+    spike_ids, spike_times, is_quantity = extract_spikeData(spikemon)
     
     # Ensure spike_times is a Brian2 Quantity for consistency
     if not is_quantity:
@@ -484,3 +529,58 @@ def membrane_potential_traces(statemon, duration, Vth = None,
         ax.legend()
     
     return ax
+
+def spectrumPlot(eigenvalues, ax=None):
+    """
+    Plots the spectrum of a complex-valued matrix using matplotlib,
+    mimicking Seaborn's aesthetic (color, size, hollow markers, etc.).
+    
+    Parameters
+    ----------
+    eigenvalues : array-like
+        Complex eigenvalues to plot
+    ax : matplotlib.axes.Axes, optional
+        Existing axis to plot on. If None, creates new figure and axis.
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure object (None if ax was provided)
+    ax : matplotlib.axes.Axes
+        Axis object
+    scat : matplotlib.collections.PathCollection
+        Scatter plot object
+    """
+    # Separate real and imaginary parts
+    real = np.real(eigenvalues)
+    imag = np.imag(eigenvalues)
+
+    # Determine color based on stability threshold - using list comprehension
+    colors = ['#ff7f0e' if r >= 1 else '#005f73' for r in real]
+    
+    # Create figure and axis if not provided
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 6))
+    else:
+        fig = None
+
+    # Plot filled scatter points with colored faces
+    scat = ax.scatter(
+        real, imag,
+        s=40,
+        c=colors,  # Use 'c' for face colors
+        # edgecolors='black',  # Optional: add black edges
+        linewidth=0.5,
+        marker='o'
+    )
+
+    # Vertical line at x = 1 (stability boundary)
+    ax.axvline(1, color='#ff7f0e', linewidth=1.5)
+
+    # Axis labels and layout
+    ax.set_xlabel("Real Axis")
+    ax.set_ylabel("Imaginary Axis")
+    ax.set_aspect("equal")
+    ax.legend([], [], frameon=False)  # No legend
+
+    return fig, ax, scat
