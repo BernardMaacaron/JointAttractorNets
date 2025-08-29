@@ -99,12 +99,11 @@ class RingAttractor():
                                 on_pre='I_syn_post += w', name='ring_synapses')
         self.ring_synapses.connect()
         self.ring_synapses.w = self.connectivity_eq
-        # self.ring_synapses.w[:] = self.weights_matrix.flatten()
 
         syn_asymEq = syn_asymMujoco if mujoco else syn_asym
             
         self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool, model=syn_asymEq,
-                                    on_pre='I_vel_post += vel_in*w_asym', name='ring_synapses_asym')
+                                    on_pre='I_vel_post += int(vel_on)*vel_in*w_asym', name='ring_synapses_asym')
         self.ring_synapses_asym.connect()
         self.ring_synapses_asym.w_asym = self.connectivityAsym_eq
 

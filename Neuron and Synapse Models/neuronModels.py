@@ -47,6 +47,7 @@ I_vel : volt
 syn_sym = 'w : volt'
 
 syn_asym = '''
+vel_on : boolean (shared)
 vel_in : 1 (shared)
 w_asym : volt
 '''

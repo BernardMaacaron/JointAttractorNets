@@ -152,7 +152,7 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
         fig, ax = plt.subplots(figsize=(10, 4))
     
     # Extract spike data using the helper function
-    spike_ids, spike_times, is_quantity = extract_spikeData(spikemon)
+    spike_ids, spike_times, is_quantity = extractSpikeData(spikemon)
     
     # Convert spike_times to seconds if it's a Brian2 Quantity
     if is_quantity:
@@ -250,78 +250,65 @@ def firing_rate_profile(spikemon, positions, duration, ax=None, instantRate=Fals
     
     return firing_rate, ax
 
-def firing_rate_over_time(spikemon, num_neurons):
-    """
-    Calculate instantaneous firing rates using NumPy arrays for efficiency
+def instantRateTT_plot(spikemon, positions, duration, num_neurons=None,
+                          fig=None, ax=None, colormap='viridis', alpha=0.7,
+                          view_angle=(30, 35), max_rate=None):
+    """Create a 3D visualization of instantaneous firing rates over time"""
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.cm as cm
     
-    Parameters:
-    ----------
-    spikemon : Brian2 SpikeMonitor or tuple
-        Monitor containing spike data
-    num_neurons : int
-        Number of neurons
-        
-    Returns:
-    -------
-    neuron_ids : array
-        Indices of neurons that fired
-    times : array
-        Times at which rates are calculated (s)
-    rates : array
-        Instantaneous firing rates (Hz)
-    """
-    # Extract spike data
-    spike_ids, spike_times, has_units = extract_spikeData(spikemon)
+    # Determine number of neurons if not provided
+    if num_neurons is None:
+        num_neurons = len(positions)
     
-    if len(spike_times) == 0:
-        return np.array([]), np.array([]), np.array([])
+    # Create figure and 3D axis if not provided
+    if fig is None or ax is None:
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111, projection='3d')
     
-    # Convert to seconds if needed
-    if has_units:
-        spike_times = spike_times/second
+    # Get the instantaneous firing rates
+    neuron_ids, spike_times, inst_rates = computeInstRateTT(spikemon, num_neurons)
     
-    # First, count how many ISIs we'll have for each neuron
-    isi_counts = np.zeros(num_neurons, dtype=int)
-    for n_id in range(num_neurons):
-        n_spikes = np.sum(spike_ids == n_id)
-        if n_spikes > 1:  # Need at least 2 spikes for ISI
-            isi_counts[n_id] = n_spikes - 1
+    if len(neuron_ids) == 0:
+        print("No spikes found for 3D visualization")
+        return fig, ax
     
-    # Total number of ISIs (and thus output entries)
-    total_entries = np.sum(isi_counts)
-    if total_entries == 0:
-        return np.array([]), np.array([]), np.array([])
+    # Convert duration to seconds if it's a Brian2 Quantity
+    if isinstance(duration, Quantity):
+        duration = duration/second
     
-    # Pre-allocate arrays
-    all_neuron_ids = np.zeros(total_entries, dtype=int)
-    all_times = np.zeros(total_entries)
-    all_rates = np.zeros(total_entries)
+    # Get neuron positions
+    neuron_positions = positions[neuron_ids]
     
-    # Fill the arrays
-    idx = 0
-    for n_id in range(num_neurons):
-        if isi_counts[n_id] > 0:
-            # Get spike times for this neuron
-            mask = spike_ids == n_id
-            neuron_spike_times = spike_times[mask]
-            
-            # Calculate ISIs and rates
-            isis = np.diff(neuron_spike_times)
-            inst_rates = 1.0 / isis
-            
-            # Number of rates for this neuron
-            n_rates = len(inst_rates)
-            
-            # Add to output arrays (at appropriate indices)
-            slice_end = idx + n_rates
-            all_neuron_ids[idx:slice_end] = n_id
-            all_times[idx:slice_end] = neuron_spike_times[1:]  # Skip first spike
-            all_rates[idx:slice_end] = inst_rates
-            
-            # Update index
-            idx += n_rates
+    # Cap rates to improve visualization if needed
+    if max_rate is not None:
+        inst_rates = np.minimum(inst_rates, max_rate)
     
-    return all_neuron_ids, all_times, all_rates
+    # Create the 3D scatter plot with color based on rate
+    scatter = ax.scatter(neuron_positions, spike_times, inst_rates, 
+                         c=inst_rates, cmap=colormap, alpha=alpha, 
+                         s=10, edgecolors='none')
+
+    # plot = ax.plot_trisurf(neuron_positions, spike_times, inst_rates, cmap=colormap, alpha=alpha)
+    # Add a color bar
+    cbar = fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=5, label='Instantaneous Firing Rate (Hz)')
+    
+    # Set labels
+    ax.set_xlabel('Neuron Position (rad)')
+    ax.set_ylabel('Time (s)')
+    ax.set_zlabel('Instantaneous Firing Rate (Hz)')
+    
+    # Set title
+    ax.set_title('3D Instantaneous Firing Rate Profile')
+    
+    # Set view angle
+    ax.view_init(elev=view_angle[0], azim=view_angle[1])
+    
+    # Set axis limits
+    ax.set_xlim(0, 2*np.pi)
+    ax.set_ylim(0, duration)
+    
+    return fig, ax
 
 def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
     """
@@ -333,7 +320,7 @@ def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
         ax (matplotlib.axes._axes.PolarAxes, optional): Axes to plot on. If None, a new figure is created.
     """
     # Use the dedicated function to calculate PVA.
-    pva_angle, pva_magnitude = calculate_PVA(firing_rates, positions)
+    pva_angle, pva_magnitude = computePVA(firing_rates, positions)
     
     # Set a scaling factor for clarity.
     scale_factor = scale * np.max(firing_rates)  
@@ -363,7 +350,8 @@ def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
     return ax
 
 def time_resolved_PVA(spikemon, positions, duration, num_neurons, 
-                      window_size=50*ms, step_size=10*ms, ax=None,
+                      window_size=50*ms, step_size=10*ms,
+                      ax=None, label=None,
                       color_windows=False, cmap_name='viridis',
                       stim_periods=None, stim_display_method='highlight',
                       highlight_alpha=0.2, highlight_color='yellow', lines_style='--'):
@@ -380,6 +368,7 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
         window_size (Brian2 Quantity): Time window for PVA calculation.
         step_size (Brian2 Quantity): Step size between windows.
         ax (matplotlib axis, optional): Axis to plot on. If None, a new figure is created.
+        label (str, optional): Label for the plot (used in the legend).
         color_windows (bool): If True, color the computed windows based on time.
         cmap_name (str): Name of the matplotlib colormap to use (if color_windows is True).
         stim_periods (list of tuples or tuple, optional): List of stimulus periods as (start_time, end_time) tuples or a single tuple.
@@ -393,43 +382,21 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
-    
-    # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spikeData(spikemon)
-    
-    # Ensure spike_times is a Brian2 Quantity for consistency
-    if not is_quantity:
-        spike_times = spike_times * second
-    
-    # Generate time windows in seconds.
-    t_windows = np.arange(0, duration/second, step_size/second)
-    pva_angles = np.zeros(len(t_windows))
-    
-    for i, t in enumerate(t_windows):
-        t_start = t * second
-        t_end = t_start + window_size
-        
-        # Count spikes for each neuron in the current window
-        window_spike_counts = np.zeros(num_neurons)
-        for neuron_idx, spike_time in zip(spike_ids, spike_times):
-            if t_start <= spike_time < t_end:
-                window_spike_counts[neuron_idx] += 1
-        
-        # Use calculate_PVA from utils to get the PVA angle (ignore magnitude here)
-        pva_angle, _ = calculate_PVA(window_spike_counts, positions)
-        # Ensure angle is in [0, 2pi]
-        pva_angles[i] = pva_angle if pva_angle >= 0 else pva_angle + 2*np.pi
 
+    # Compute PVA angles and time windows
+    pva_angles, time_windows = computePVATT(spikemon, positions, duration, num_neurons, window_size, step_size)
+
+    # Plot the data
     if color_windows:
-        # Create a colormap to color the windows by time.
+        # Create a colormap to color the windows by time
         cmap = plt.get_cmap(cmap_name)
-        norm = plt.Normalize(vmin=t_windows.min(), vmax=t_windows.max())
-        colors = cmap(norm(t_windows))
-        scatter = ax.scatter(t_windows, pva_angles, s=10, c=colors)
+        norm = plt.Normalize(vmin=time_windows.min(), vmax=time_windows.max())
+        colors = cmap(norm(time_windows))
+        scatter = ax.scatter(time_windows, pva_angles, s=10, c=colors, label=label)
         plt.colorbar(scatter, ax=ax, label="Time (s)")
     else:
-        ax.scatter(t_windows, pva_angles, s=10, color='blue')
-    
+        ax.plot(time_windows, pva_angles, linestyle='', marker='o', markersize=3, label=label)
+
     # Incorporate stim_periods visualization
     if stim_periods is not None:
         if not isinstance(stim_periods[0], (list, tuple)):
@@ -446,15 +413,16 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
                 ax.axvline(start/second, color=color, linestyle=lines_style)
                 ax.axvline(end/second, color=color, linestyle=lines_style)
     
+    # Set axis labels and title
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Decoded angle (rad)')
     ax.set_ylim(0, 2*np.pi)
     ax.set_title('Time-Resolved Population Vector Average (PVA)')
-    # Conditionally add legend only if there are legend entries.
-    handles, labels = ax.get_legend_handles_labels()
-    if handles:
+
+    # Add a legend if a label is provided
+    if label:
         ax.legend()
-    
+
     return pva_angles, ax
 
 def membrane_potential_traces(statemon, duration, Vth = None,
