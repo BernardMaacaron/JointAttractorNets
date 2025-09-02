@@ -44,7 +44,10 @@ I_vel : volt
 
 
 # Synapse Model
-syn_sym = 'w : volt'
+syn_sym = '''
+w = g_cosine*cos(theta_pre - theta_post): volt
+g_cosine: volt
+'''
 
 syn_asym = '''
 vel_on : boolean (shared)

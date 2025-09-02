@@ -95,7 +95,7 @@ class RingAttractor():
             self.w_inh = self.w_inh / num_neurons
 
         # Create synapses: on a presynaptic spike, add weight to postsynaptic I_syn.
-        self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w : volt',
+        self.ring_synapses = Synapses(self.ring_pool, self.ring_pool, model='w: volt',
                                 on_pre='I_syn_post += w', name='ring_synapses')
         self.ring_synapses.connect()
         self.ring_synapses.w = self.connectivity_eq
