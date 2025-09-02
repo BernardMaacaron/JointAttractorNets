@@ -11,11 +11,11 @@ V_rest = -70*mV     : volt (shared)
 I_ext : volt
 '''
 
-# LIF_xi_eq = '''
-# dV/dt = (V_rest - V + I_syn + I_ext)/tau + sigma_noise*xi*tau**(-0.5) : volt (unless refractory)
-# I_syn : volt
-# I_ext : volt
-# '''
+LIF_xi_eq = '''
+dV/dt = (V_rest - V + I_syn + I_ext)/tau + sigma_noise*xi*tau**(-0.5) : volt (unless refractory)
+I_syn : volt
+I_ext : volt
+'''
  
 LIF_xi_vel_eq = '''
 dV/dt = (V_rest - V + I_syn + I_ext + I_vel)/tau + sigma_noise*xi*tau**(-0.5) : volt (unless refractory)
@@ -44,9 +44,13 @@ I_vel : volt
 
 
 # Synapse Model
-syn_sym = 'w : volt'
+syn_sym = '''
+w = g_cosine*cos(theta_pre - theta_post): volt
+g_cosine: volt
+'''
 
 syn_asym = '''
+vel_on : boolean (shared)
 vel_in : 1 (shared)
 w_asym : volt
 '''

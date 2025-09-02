@@ -1,32 +1,8 @@
 import matplotlib.pyplot as plt
 from brian2 import *
-from utils import calculate_PVA
+from utils import *
 
-def extract_spike_data(spike_input):
-    """
-    Helper function to extract spike data from either a Brian2 SpikeMonitor or a tuple.
-    
-    Parameters:
-    ----------
-    spike_input : Brian2 SpikeMonitor or tuple
-        Either a SpikeMonitor object or a tuple of (spike_ids, spike_times)
-        
-    Returns:
-    -------
-    tuple : (spike_ids, spike_times, is_quantity)
-        - spike_ids: array of neuron indices
-        - spike_times: array of spike times (in seconds or as Brian2 Quantity)
-        - is_quantity: boolean indicating if spike_times is a Brian2 Quantity
-    """
-    if hasattr(spike_input, 't') and hasattr(spike_input, 'i'):
-        # It's a Brian2 SpikeMonitor
-        return spike_input.i, spike_input.t, True
-    else:
-        # It's a tuple of (spike_ids, spike_times)
-        spike_ids, spike_times = spike_input
-        # Check if spike_times is a Brian2 Quantity
-        is_quantity = hasattr(spike_times, 'dimensionality')
-        return spike_ids, spike_times, is_quantity
+
 
 def plot_on_circle(x, y, 
                    title="Circular Plot",
@@ -52,7 +28,7 @@ def plot_on_circle(x, y,
         title_pad (float): Extra padding (in points) between the title and the axes.
         title_y (float): Vertical position for the title (axes fraction, default is above the axes).
         
-        r_label (str): Label for the radial coordinate.
+        r_label (str):
         label_pad (float): Extra padding (in points) between the label and the axes.
         theta_ticks (tuple, optional): A tuple (ticks, tick_labels) to customize the angular ticks.
         
@@ -74,7 +50,7 @@ def plot_on_circle(x, y,
         line_kwargs = {'lw': 2}
     
     # Map x to radians in the range [0, 2pi]
-    theta = 2 * np.pi * (x - np.min(x)) / (np.max(x) - np.min(x))     # NOTE: This doesn't use np.deg2rad to generalize to all type of values not just degrees.
+    theta = 2 * np.pi * (x - np.min(x)) / (np.max(x) - np.min(x))     # NOTE: This doesn't use np.deg
 
     
     # Create polar subplot with custom figure size
@@ -139,7 +115,7 @@ def visualise_connectivity(Synapses):
 
 def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highlight',
                 highlight_alpha=0.2, highlight_color='yellow', lines_style='--', duration=None,
-                num_neurons = 120, y_axisFull=False):
+                num_neurons=120, y_axisFull=False):
     """Create a raster plot of spike times with optional stimulus visualization
     
     Parameters:
@@ -175,8 +151,8 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
-    # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
+    # Extract spike data using the helper function
+    spike_ids, spike_times, is_quantity = extractSpikeData(spikemon)
     
     # Convert spike_times to seconds if it's a Brian2 Quantity
     if is_quantity:
@@ -224,59 +200,115 @@ def raster_plot(spikemon, ax=None, stim_periods=None, stim_display_method='highl
     
     return ax
 
-def firing_rate_profile(spikemon, positions, duration, ax=None):
+def firing_rate_profile(spikemon, positions, duration, ax=None, instantRate=False):
     """Calculate and plot firing rates across positions
     
     Parameters:
     ----------
     spikemon : Brian2 SpikeMonitor or tuple
         Monitor containing spike data, or a tuple of (spike_ids, spike_times)
-        where spike_ids is an array of neuron indices and spike_times is an array of 
-        corresponding spike times (in seconds or as Brian2 Quantity objects)
     positions : array
         Position of each neuron on the ring
     duration : Brian2 Quantity
         Total simulation duration
     ax : matplotlib axis, optional
         Axis to plot on. If None, a new figure will be created
+    instantRate : bool, optional
+        If True, uses computeInstRate, otherwise uses computeFiringRate
         
     Returns:
     -------
-    spike_rates : dict
-        Dictionary containing 'first_half' and 'second_half' firing rates
+    firing_rate : array
+        Array of firing rates for each neuron
     ax : matplotlib axis
         The axis with the plot
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
     
-    # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
-    
-    # Ensure spike_times is a Brian2 Quantity for consistency
-    if not is_quantity:
-        spike_times = spike_times * second
-    
-    num_indices = len(positions)
-    # Calculate firing rates
-    spike_count = np.zeros(num_indices)
-    
-    for i, t in zip(spike_ids, spike_times):
-        spike_count[i] += 1
-    
-    firing_rate = spike_count / (duration/second)
+    # Calculate firing rates using either computeFiringRate or computeInstRate
+    num_neurons = len(positions)
+    if instantRate:
+        firing_rate = computeInstRate(spikemon, num_neurons)
+    else:
+        firing_rate = computeFiringRate(spikemon, num_neurons, total_duration=duration)
     
     # Plot firing rates
     ax.plot(positions, firing_rate, marker='o', linestyle='-')
     ax.set_xlabel('Position (radians)')
-    ax.set_ylabel('Firing rate (Hz)')
-    ax.set_title('Firing Rate Profile')
-    # Conditionally add legend only if there are legend entries.
+    if instantRate:
+        ax.set_ylabel('Instantaneous Firing rate (Hz)')
+        ax.set_title('Instant. Firing Rate Profile')
+    else:
+        ax.set_ylabel('Firing rate (Hz)')
+        ax.set_title('Firing Rate Profile')
+    
+    # Conditionally add legend only if there are legend entries
     handles, labels = ax.get_legend_handles_labels()
     if handles:
         ax.legend()
     
     return firing_rate, ax
+
+def instantRateTT_plot(spikemon, positions, duration, num_neurons=None,
+                          fig=None, ax=None, colormap='viridis', alpha=0.7,
+                          view_angle=(30, 35), max_rate=None):
+    """Create a 3D visualization of instantaneous firing rates over time"""
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.cm as cm
+    
+    # Determine number of neurons if not provided
+    if num_neurons is None:
+        num_neurons = len(positions)
+    
+    # Create figure and 3D axis if not provided
+    if fig is None or ax is None:
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111, projection='3d')
+    
+    # Get the instantaneous firing rates
+    neuron_ids, spike_times, inst_rates = computeInstRateTT(spikemon, num_neurons)
+    
+    if len(neuron_ids) == 0:
+        print("No spikes found for 3D visualization")
+        return fig, ax
+    
+    # Convert duration to seconds if it's a Brian2 Quantity
+    if isinstance(duration, Quantity):
+        duration = duration/second
+    
+    # Get neuron positions
+    neuron_positions = positions[neuron_ids]
+    
+    # Cap rates to improve visualization if needed
+    if max_rate is not None:
+        inst_rates = np.minimum(inst_rates, max_rate)
+    
+    # Create the 3D scatter plot with color based on rate
+    scatter = ax.scatter(neuron_positions, spike_times, inst_rates, 
+                         c=inst_rates, cmap=colormap, alpha=alpha, 
+                         s=10, edgecolors='none')
+
+    # plot = ax.plot_trisurf(neuron_positions, spike_times, inst_rates, cmap=colormap, alpha=alpha)
+    # Add a color bar
+    cbar = fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=5, label='Instantaneous Firing Rate (Hz)')
+    
+    # Set labels
+    ax.set_xlabel('Neuron Position (rad)')
+    ax.set_ylabel('Time (s)')
+    ax.set_zlabel('Instantaneous Firing Rate (Hz)')
+    
+    # Set title
+    ax.set_title('3D Instantaneous Firing Rate Profile')
+    
+    # Set view angle
+    ax.view_init(elev=view_angle[0], azim=view_angle[1])
+    
+    # Set axis limits
+    ax.set_xlim(0, 2*np.pi)
+    ax.set_ylim(0, duration)
+    
+    return fig, ax
 
 def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
     """
@@ -288,7 +320,7 @@ def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
         ax (matplotlib.axes._axes.PolarAxes, optional): Axes to plot on. If None, a new figure is created.
     """
     # Use the dedicated function to calculate PVA.
-    pva_angle, pva_magnitude = calculate_PVA(firing_rates, positions)
+    pva_angle, pva_magnitude = computePVA(firing_rates, positions)
     
     # Set a scaling factor for clarity.
     scale_factor = scale * np.max(firing_rates)  
@@ -318,7 +350,8 @@ def polar_plot_PVA(firing_rates, positions, scale=1.5, ax=None):
     return ax
 
 def time_resolved_PVA(spikemon, positions, duration, num_neurons, 
-                      window_size=50*ms, step_size=10*ms, ax=None,
+                      window_size=50*ms, step_size=10*ms,
+                      ax=None, label=None,
                       color_windows=False, cmap_name='viridis',
                       stim_periods=None, stim_display_method='highlight',
                       highlight_alpha=0.2, highlight_color='yellow', lines_style='--'):
@@ -335,6 +368,7 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
         window_size (Brian2 Quantity): Time window for PVA calculation.
         step_size (Brian2 Quantity): Step size between windows.
         ax (matplotlib axis, optional): Axis to plot on. If None, a new figure is created.
+        label (str, optional): Label for the plot (used in the legend).
         color_windows (bool): If True, color the computed windows based on time.
         cmap_name (str): Name of the matplotlib colormap to use (if color_windows is True).
         stim_periods (list of tuples or tuple, optional): List of stimulus periods as (start_time, end_time) tuples or a single tuple.
@@ -348,43 +382,21 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
     """
     if ax is None:
         fig, ax = plt.subplots(figsize=(10, 4))
-    
-    # Extract spike data
-    spike_ids, spike_times, is_quantity = extract_spike_data(spikemon)
-    
-    # Ensure spike_times is a Brian2 Quantity for consistency
-    if not is_quantity:
-        spike_times = spike_times * second
-    
-    # Generate time windows in seconds.
-    t_windows = np.arange(0, duration/second, step_size/second)
-    pva_angles = np.zeros(len(t_windows))
-    
-    for i, t in enumerate(t_windows):
-        t_start = t * second
-        t_end = t_start + window_size
-        
-        # Count spikes for each neuron in the current window
-        window_spike_counts = np.zeros(num_neurons)
-        for neuron_idx, spike_time in zip(spike_ids, spike_times):
-            if t_start <= spike_time < t_end:
-                window_spike_counts[neuron_idx] += 1
-        
-        # Use calculate_PVA from utils to get the PVA angle (ignore magnitude here)
-        pva_angle, _ = calculate_PVA(window_spike_counts, positions)
-        # Ensure angle is in [0, 2pi]
-        pva_angles[i] = pva_angle if pva_angle >= 0 else pva_angle + 2*np.pi
 
+    # Compute PVA angles and time windows
+    pva_angles, time_windows = computePVATT(spikemon, positions, duration, num_neurons, window_size, step_size)
+
+    # Plot the data
     if color_windows:
-        # Create a colormap to color the windows by time.
+        # Create a colormap to color the windows by time
         cmap = plt.get_cmap(cmap_name)
-        norm = plt.Normalize(vmin=t_windows.min(), vmax=t_windows.max())
-        colors = cmap(norm(t_windows))
-        scatter = ax.scatter(t_windows, pva_angles, s=10, c=colors)
+        norm = plt.Normalize(vmin=time_windows.min(), vmax=time_windows.max())
+        colors = cmap(norm(time_windows))
+        scatter = ax.scatter(time_windows, pva_angles, s=10, c=colors, label=label)
         plt.colorbar(scatter, ax=ax, label="Time (s)")
     else:
-        ax.scatter(t_windows, pva_angles, s=10, color='blue')
-    
+        ax.plot(time_windows, pva_angles, linestyle='', marker='o', markersize=3, label=label)
+
     # Incorporate stim_periods visualization
     if stim_periods is not None:
         if not isinstance(stim_periods[0], (list, tuple)):
@@ -401,15 +413,16 @@ def time_resolved_PVA(spikemon, positions, duration, num_neurons,
                 ax.axvline(start/second, color=color, linestyle=lines_style)
                 ax.axvline(end/second, color=color, linestyle=lines_style)
     
+    # Set axis labels and title
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Decoded angle (rad)')
     ax.set_ylim(0, 2*np.pi)
     ax.set_title('Time-Resolved Population Vector Average (PVA)')
-    # Conditionally add legend only if there are legend entries.
-    handles, labels = ax.get_legend_handles_labels()
-    if handles:
+
+    # Add a legend if a label is provided
+    if label:
         ax.legend()
-    
+
     return pva_angles, ax
 
 def membrane_potential_traces(statemon, duration, Vth = None,
@@ -484,3 +497,58 @@ def membrane_potential_traces(statemon, duration, Vth = None,
         ax.legend()
     
     return ax
+
+def spectrumPlot(eigenvalues, ax=None):
+    """
+    Plots the spectrum of a complex-valued matrix using matplotlib,
+    mimicking Seaborn's aesthetic (color, size, hollow markers, etc.).
+    
+    Parameters
+    ----------
+    eigenvalues : array-like
+        Complex eigenvalues to plot
+    ax : matplotlib.axes.Axes, optional
+        Existing axis to plot on. If None, creates new figure and axis.
+        
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure object (None if ax was provided)
+    ax : matplotlib.axes.Axes
+        Axis object
+    scat : matplotlib.collections.PathCollection
+        Scatter plot object
+    """
+    # Separate real and imaginary parts
+    real = np.real(eigenvalues)
+    imag = np.imag(eigenvalues)
+
+    # Determine color based on stability threshold - using list comprehension
+    colors = ['#ff7f0e' if r >= 1 else '#005f73' for r in real]
+    
+    # Create figure and axis if not provided
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 6))
+    else:
+        fig = None
+
+    # Plot filled scatter points with colored faces
+    scat = ax.scatter(
+        real, imag,
+        s=40,
+        c=colors,  # Use 'c' for face colors
+        # edgecolors='black',  # Optional: add black edges
+        linewidth=0.5,
+        marker='o'
+    )
+
+    # Vertical line at x = 1 (stability boundary)
+    ax.axvline(1, color='#ff7f0e', linewidth=1.5)
+
+    # Axis labels and layout
+    ax.set_xlabel("Real Axis")
+    ax.set_ylabel("Imaginary Axis")
+    ax.set_aspect("equal")
+    ax.legend([], [], frameon=False)  # No legend
+
+    return fig, ax, scat

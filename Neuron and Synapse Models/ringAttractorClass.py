@@ -2,7 +2,8 @@ from neuronModels import *
 from brian2 import *
 
 sys.path.append('Tools')
-from plottingTools import spectrumPlot
+from plottingTools import *
+from utils import *
 
 class RingAttractor():
     def __init__(self,
@@ -79,7 +80,7 @@ class RingAttractor():
             
         elif self.syn_profile == 'cosine':
             g_cosine = syn_params.get('g_cosine', 0.1*mV)
-            g_sine = syn_params.get('g_sine', 0.1*mV)
+            g_sine = syn_params.get('g_sine', 1.0*mV)
             self.connectivity_eq = 'g_cosine * cos(theta_pre - theta_post)'
             self.connectivityAsym_eq = 'g_sine * sin(theta_pre - theta_post)'
             # self.weights_matrix = g_cosine * np.cos(angular_distMat)
@@ -140,6 +141,7 @@ class RingAttractor():
           
         
         self.BrianObjects.extend([self.ring_pool, self.ring_synapses, self.ring_synapses_asym])
+        
 
     def evaluateStability(self, plot = True):
         WeightMatrix = np.reshape(np.array(self.ring_synapses.w_), (self.numNeurons, self.numNeurons))
@@ -147,3 +149,114 @@ class RingAttractor():
         if plot:
             spectrumPlot(eigenvalues)
         return eigenvalues
+
+    def runSimulation(self, device = None, dt=0.1*ms,
+                      inputParams = None, inputType='Uniform',
+                      velInput = 0.0, runTime=50*ms, plot=False):
+        
+        
+        if device == 'cpp_standalone':
+            device.reinit()
+            device.activate()
+            set_device(device, build_on_run=False)
+
+        # Define simulation parameters
+        defaultclock.dt = dt
+        
+        # Define Inputs
+
+        I0 = inputParams.get('I0', 0) * mV
+        targetPosition = inputParams.get('targetPosition', 0) # Consider this is in degrees
+
+        # Calculate external input based on input type
+        I_ext_array = np.zeros(self.numNeurons) * mV
+        if inputType == 'Gaussian':
+            # Original Gaussian input
+            stimulus_center = np.deg2rad(targetPosition) % (2*np.pi)  # Convert degrees to radians
+            stimulus_width = 0.5  # width in radians
+            
+            d = arctan2(sin(self.positions - stimulus_center), cos(self.positions - stimulus_center))
+            I_ext_array += I0 * np.exp(-(d**2) / (2 * stimulus_width**2))
+        
+        elif inputType == 'Uniform':
+            # Equal input to all neurons
+            I_ext_array += np.ones(self.numNeurons) * I0
+
+            target_index = self.__get_neuron_index(targetPosition, in_degrees=True)
+            I_ext_array[target_index] += inputParams.get('I_target', 1.0)*mV
+
+        self.ring_pool.I_ext = I_ext_array
+
+        # # Define run_regularly calls
+        # self.ring_pool.run_regularly('V = clip(V, V_reset, inf*volt)', dt=defaultclock.dt)
+
+        # Define Monitors
+        # By default include a spike monitor
+        self.spikeMonitor = SpikeMonitor(self.ring_pool)
+        localObjects = [self.spikeMonitor]
+
+        # Generate Brian Network
+        net = Network(self.BrianObjects + localObjects)
+
+        # Run the simulation
+        
+        self.ring_pool.I_ext = I_ext_array
+        self.ring_synapses_asym.vel_in = velInput  # Default velocity input for asymmetrical synapses
+        self.ring_synapses_asym.vel_on = False
+        net.run(500*ms) # Run for initial transient
+        
+        I_ext_array[target_index] -= inputParams.get('I_target', 1.0)*mV
+        self.ring_pool.I_ext = I_ext_array
+        self.ring_synapses_asym.vel_on = True
+        net.run(runTime)
+        simTime = runTime + 500*ms
+        
+        if device == 'cpp_standalone':
+            device.build(directory = 'internalSim_build', compile=True, run=True, debug=False, clean=False)
+        
+        firingRates = computeInstRate(self.spikeMonitor, self.numNeurons, meanISI = True)
+        
+        pva_angle, pva_magnitude = computePVA(firingRates, runTime)
+        
+        if plot:
+            raster_plot(self.spikeMonitor,duration=simTime, num_neurons=self.numNeurons, y_axisFull=True)
+
+        return pva_angle, pva_magnitude
+        
+    def calibrateVelocityGain(self):
+        pass
+    
+
+#---------------------------
+# Utility Functions
+#---------------------------
+    def _get_neuron_index(self, target_position, in_degrees=True):
+        """
+        Find the neuron index closest to a given target position.
+        
+        Parameters:
+        -----------
+        target_position : float
+            The target position on the ring.
+        in_degrees : bool, optional
+            If True, target_position is in degrees [0, 360]. 
+            If False, target_position is in radians [0, 2π].
+        
+        Returns:
+        --------
+        index : int
+            The index of the neuron closest to the target position.
+        """
+        # Convert degrees to radians if necessary
+        if in_degrees:
+            target_rad = np.deg2rad(target_position) % (2*np.pi)
+        else:
+            target_rad = target_position % (2*np.pi)
+            
+        # Calculate the circular distance to each neuron
+        distances = np.abs(np.mod(self.positions - target_rad + np.pi, 2*np.pi) - np.pi)
+        
+        # Find the neuron with the minimum distance
+        closest_index = np.argmin(distances)
+        
+        return closest_index
