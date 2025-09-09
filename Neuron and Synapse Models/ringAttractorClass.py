@@ -1,7 +1,12 @@
 from neuronModels import *
 from brian2 import *
+import os
+import sys
 
-sys.path.append('Tools')
+# Add the Tools directory to the path
+tools_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'Tools')
+sys.path.append(tools_path)
+
 from plottingTools import *
 from utils import *
 
@@ -52,7 +57,7 @@ class RingAttractor():
             reset_string = 'V = V_reset'
             
         self.ring_pool = NeuronGroup(self.numNeurons, neuron_eq, threshold = 'V > Vth', reset = reset_string, refractory=refractory_period,
-                                    method="euler", name="ring_neurons")
+                                    method="euler", name="ring_neurons", namespace={'Vth': Vth, 'V_reset': V_reset})
         self.ring_pool.V = V_reset
         
 
@@ -122,7 +127,7 @@ class RingAttractor():
         # Create a global inhibitory neuron if glob_inh is True.    
         if self.glob_inh:
             self.glob_inh_neuron = NeuronGroup(1, neuron_eq, threshold='V > Vth', reset='V = V_reset', refractory=refractory_period,
-                                                method="euler", name="glob_inh_neuron")
+                                                method="euler", name="glob_inh_neuron", namespace={'Vth': Vth, 'V_reset': V_reset})
             self.glob_inh_neuron.V = V_reset
         
             # Synapses from the global inhibitory neuron to all neurons in the ring.
