@@ -20,6 +20,7 @@ import socket
 nsm_path = os.path.join(os.path.dirname(__file__), 'Neuron and Synapse Models')
 sys.path.append(nsm_path)
 from ringAttractorClass import RingAttractor
+from ringAttractorClassBoundaries import  BoundedRingAttractor
 from neuronModels import LIF_xi_vel_eq
 
 tools_path = os.path.join(os.path.dirname(__file__), 'Tools')
@@ -165,11 +166,20 @@ def simulate_with_trajectory(data, alpha_value, beta_value=0.0, initial_position
     for data_idx in range(duration):
         # Create a fresh ring attractor for each timestep to avoid Brian2 reuse issues
         neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
-        ring = RingAttractor(neuron_eq,  
+        limit_joint=np.deg2rad(88)
+        limit_neuron=np.round((limit_joint*120)/(2*np.pi))
+        # ring = RingAttractor(neuron_eq,  
+        #                     syn_profile='cosine',
+        #                     autapse=True,
+        #                     glob_inh=True, w_inh=-17*mV,
+        #                     g_cosine=4*mV)
+        ring = BoundedRingAttractor(neuron_eq,  
                             syn_profile='cosine',
                             autapse=True,
-                            glob_inh=True, w_inh=-17*mV,
-                            g_cosine=4*mV)
+                            glob_inh=True, w_inh=-0.555*mV,
+                            g_cosine=0.1*mV,
+                            limit_neuron=limit_neuron)
+        
         ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
         
         # Get velocity, acceleration, and position from data
@@ -177,7 +187,7 @@ def simulate_with_trajectory(data, alpha_value, beta_value=0.0, initial_position
         acceleration = data['acceleration'].iloc[data_idx]
         current_position = data['position'].iloc[data_idx]
         dt = 0.1*ms
-        inputParams = {'I0': 22.00, 'targetPosition': current_position, 'I_target': 1.0}
+        inputParams = {'I0': 22.00, 'targetPosition': current_position+44, 'I_target': 1.0}
         velocityInput = (alpha_value * velocity / 1000.0) + (beta_value * acceleration / 1000.0)
 
         pva_angle, pva_magnitude = runSimulation(ringAttractor=ring, device=None, dt=dt,
@@ -185,13 +195,13 @@ def simulate_with_trajectory(data, alpha_value, beta_value=0.0, initial_position
                     velInput=velocityInput, runTime=50*ms, plot=False, flag=True)
         
         # Store positions
-        bump_positions.append(np.rad2deg(pva_angle))
+        bump_positions.append(np.rad2deg(pva_angle)-44)
         gt_positions.append(current_position)
         
         # Calculate error (circular distance)
         error = min(
-            abs((pva_angle) - np.deg2rad(current_position)),
-            2*np.pi - abs((pva_angle) - np.deg2rad(current_position))
+            abs((pva_angle) - np.deg2rad((current_position+44))),
+            2*np.pi - abs((pva_angle) - np.deg2rad((current_position+44)))
         )
         if np.rad2deg(error) <= 1.5:  # Only count errors within 1.5 degrees
             error = 0.0
@@ -269,7 +279,7 @@ def optimize_alpha_beta_for_velocity_sequential(velocity_segments):
             return total_mse / total_weight if total_weight > 0 else float('inf')
         
         # Initial guess
-        initial_guess = [0.13, 0.05]  # Starting alpha and beta values
+        initial_guess = [0.21, 0.033]  # Starting alpha and beta values
         
         # Bounds for parameters
         bounds = [(0.0, 1.0), (-1.0, 1.0)]  # bounds for alpha and beta
@@ -760,11 +770,20 @@ def validate_trajectory_with_gv_ha(data_file, velocity_data):
     for data_idx in range(duration):
         # Create a fresh ring attractor for each timestep to avoid Brian2 reuse issues
         neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
-        ring = RingAttractor(neuron_eq,  
+        limit_joint=np.deg2rad(88)
+        limit_neuron=np.round((limit_joint*120)/(2*np.pi))
+        # ring = RingAttractor(neuron_eq,  
+        #                     syn_profile='cosine',
+        #                     autapse=True,
+        #                     glob_inh=True, w_inh=-17*mV,
+        #                     g_cosine=4*mV)
+        ring = BoundedRingAttractor(neuron_eq,  
                             syn_profile='cosine',
                             autapse=True,
                             glob_inh=True, w_inh=-0.555*mV,
-                            g_cosine=0.1*mV)
+                            g_cosine=0.1*mV,
+                            limit_neuron=limit_neuron)
+        
         ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
         
         # Get velocity, acceleration, and position from data
@@ -796,13 +815,13 @@ def validate_trajectory_with_gv_ha(data_file, velocity_data):
                     velInput=velocityInput, runTime=50*ms, plot=False, flag=True)
         
         # Store positions
-        bump_positions.append(np.rad2deg(pva_angle))
+        bump_positions.append(np.rad2deg(pva_angle)-44)
         gt_positions.append(current_position)
         
         # Calculate error (circular distance)
         error = min(
-            abs(pva_angle - np.deg2rad(current_position)),
-            2*np.pi - abs(pva_angle - np.deg2rad(current_position))
+            abs(pva_angle - np.deg2rad((current_position+44))),
+            2*np.pi - abs(pva_angle - np.deg2rad((current_position-44)))
         )
         if np.rad2deg(error) <= 1.5:  # Only count errors within 1.5 degrees
             error = 0.0
@@ -877,7 +896,7 @@ def validate_all_trajectories(folder_path="./capocaccia",
 
 if __name__ == "__main__":
     # Define output directory for acceleration-aware training
-    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/velocity_acceleration_training"
+    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/velocity_acceleration_training"
     
     # Train g(v) and h(a) functions from trajectory files
     velocity_data = train_from_trajectory_files(

@@ -20,6 +20,7 @@ import socket
 nsm_path = os.path.join(os.path.dirname(__file__), 'Neuron and Synapse Models')
 sys.path.append(nsm_path)
 from ringAttractorClass import RingAttractor
+from ringAttractorClassBoundaries import  BoundedRingAttractor
 from neuronModels import LIF_xi_vel_eq
 
 tools_path = os.path.join(os.path.dirname(__file__), 'Tools')

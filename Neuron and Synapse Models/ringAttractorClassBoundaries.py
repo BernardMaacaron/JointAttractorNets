@@ -267,10 +267,11 @@ class BoundedRingAttractor():
            
         self.ring_synapses_asym = Synapses(self.ring_pool, self.ring_pool,
                                    model='''vel_in : 1 (shared)
+                                            vel_on : boolean (shared)
                                             w_asym : volt
                                             w_asym_positive : volt
                                             w_asym_negative : volt''',
-                                   on_pre='I_vel_post += vel_in * (w_asym+ w_asym_positive * int(vel_in > 0) - w_asym_negative * int(vel_in < 0))')
+                                   on_pre='I_vel_post += int(vel_on)*(vel_in * (w_asym+ w_asym_positive * int(vel_in > 0) - w_asym_negative * int(vel_in < 0)))')
         self.ring_synapses_asym.connect()
         self.ring_synapses_asym.w_asym = self.connectivityAsym_eq
         # If the class has member self.connectivityAsymPositive_eq, set w_asym_positive accordingly
