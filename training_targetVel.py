@@ -811,7 +811,7 @@ def validate_all_trajectories(folder_path="./capocaccia",
 
 if __name__ == "__main__":
     # Define output directory for acceleration-aware training
-    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/velocity_training"
+    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training"
     
     # Train g(v) and h(a) functions from trajectory files
     velocity_data = train_from_trajectory_files(

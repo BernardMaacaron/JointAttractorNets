@@ -159,8 +159,8 @@ def simulate_with_trajectory(data, alpha_value, initial_position=None, duration=
         ring = RingAttractor(neuron_eq,  
                             syn_profile='cosine',
                             autapse=True,
-                            glob_inh=True, w_inh=-17*mV,
-                            g_cosine=4*mV)
+                            glob_inh=True, w_inh=-0.555*mV,
+                            g_cosine=0.1*mV)
         ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
         velocity = data['velocity'].iloc[data_idx]
         current_position = data['position'].iloc[data_idx]
