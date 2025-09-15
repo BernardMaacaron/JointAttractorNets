@@ -308,49 +308,29 @@ def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttrac
     trajectory_files = glob.glob(file_pattern)
     if not trajectory_files:
         print("No trajectory files found.")
-        return None
-    print(f"Found {len(trajectory_files)} trajectory files")
-    velocity_segments = {}
-    for file_path in trajectory_files:
-        data = load_trajectory_data(file_path)
-        for vel, group in data.groupby('rounded_velocity'):
-            if len(group) >= 3:
-                if vel not in velocity_segments:
-                    velocity_segments[vel] = []
-                velocity_segments[vel].append(group.reset_index(drop=True))
-    print(f"Optimizing alpha for {len(velocity_segments)} unique velocities...")
-    optimization_args = [(vel, segments) for vel, segments in velocity_segments.items()]
-    with Pool(processes=cpu_count()) as pool:
-        optimization_results = list(tqdm(
-            pool.imap(optimize_alpha_for_velocity, optimization_args),
-            total=len(optimization_args)
-        ))
-    velocity_data = pd.DataFrame(
-        optimization_results, 
-        columns=['velocity', 'optimal_alpha', 'mse', 'num_segments']
-    )
-    velocity_data = velocity_data.sort_values('velocity')
-    csv_path = os.path.join(output_dir, "velocity_alpha_mapping.csv")
-    velocity_data.to_csv(csv_path, index=False)
-    print(f"Velocity to alpha mapping saved to {csv_path}")
-    plt.figure(figsize=(12, 10))
-    plt.subplot(2, 1, 1)
-    plt.scatter(velocity_data['velocity'], velocity_data['optimal_alpha'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('Optimal Alpha')
-    plt.title('Alpha Function from Trajectory Data')
-    plt.grid(True)
-    plt.subplot(2, 1, 2)
-    velocity_data['v_times_alpha'] = velocity_data['velocity'] * velocity_data['optimal_alpha']
-    plt.scatter(velocity_data['velocity'], velocity_data['v_times_alpha'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('v * alpha (deg/s)')
-    plt.title('Effective Input to Network (v * alpha)')
-    plt.grid(True)
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "g_v_function_and_product.png"))
+        results = []
+        for velocity, trajectory_segments in tqdm(velocity_segments.items(), desc="Optimizing velocities"):
+            def objective_function(alpha):
+                total_mse = 0
+                total_weight = 0
+                for segment in trajectory_segments:
+                    mse, _, _ = simulate_with_trajectory(segment, alpha)
+                    segment_weight = len(segment)
+                    total_mse += mse * segment_weight
+                    total_weight += segment_weight
+                return total_mse / total_weight if total_weight > 0 else float('inf')
+            initial_guess = [0.13]
+            bounds = [(0.0, 1.0)]
+            result = minimize_scalar(
+                objective_function,
+                bounds=bounds,
+                method='bounded',
+                options={'maxiter': 20}
+            )
+            optimal_alpha = result.x
+            mse = objective_function(optimal_alpha)
+            results.append((velocity, optimal_alpha, mse, len(trajectory_segments)))
+        return results
     plt.figure(figsize=(10, 6))
     plt.scatter(velocity_data['velocity'], velocity_data['optimal_alpha'], 
                 s=velocity_data['num_segments']*10, alpha=0.7)
@@ -358,15 +338,7 @@ def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttrac
     plt.ylabel('Optimal Alpha')
     plt.title('Alpha Function from Trajectory Data')
     plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "g_v_function.png"))
-    plt.figure(figsize=(10, 6))
-    plt.scatter(velocity_data['velocity'], velocity_data['v_times_alpha'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('v * alpha (deg/s)')
-    plt.title('Effective Input to Network (v * alpha)')
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "v_times_g_v_function.png"))
+    plt.savefig(os.path.join(output_dir, "alpha_function.png"))
     return velocity_data
 
 def validate_trajectory_with_gv(data_file, velocity_data):
@@ -819,16 +791,16 @@ if __name__ == "__main__":
     output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/velocity_training"
     
     # Train g(v) and h(a) functions from trajectory files
-    velocity_data = train_from_trajectory_files(
-        folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
-        output_dir=output_dir
-    )
+    # velocity_data = train_from_trajectory_files(
+    #     folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
+    #     output_dir=output_dir
+    # )
     
     # Validate all trajectories using learned g(v) and h(a)
     validation_results = validate_all_trajectories(
         folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
         output_dir=output_dir,
-        velocity_data=velocity_data
+        velocity_data=None
     )
     
     print("Training and validation with acceleration complete!")
