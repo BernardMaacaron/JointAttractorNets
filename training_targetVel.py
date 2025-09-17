@@ -136,7 +136,7 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
         net.run(runTime)
         firingRates = computeInstRate(ringAttractor.spikeMonitor, ringAttractor.numNeurons, meanISI = True)
         pva_angle, pva_magnitude = computePVA(firingRates, ringAttractor.positions)
-        pva_angle_vec.append(pva_angle)
+        pva_angle_vec.append(pva_angle-np.deg2rad(44)) # Remove offset of 44 degrees
         pva_magnitude_vec.append(pva_magnitude)
         simTime = runTime + 500*ms
 
@@ -170,14 +170,22 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
     # Use the first position as the initial target position
     initial_target_position = position_vector[0]
     neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
-    ring = RingAttractor(neuron_eq,  
-                        syn_profile='cosine',
-                        autapse=True,
-                        glob_inh=True, w_inh=-17*mV,
-                        g_cosine=4*mV)
+    limit_joint=np.deg2rad(88)
+    limit_neuron=np.round((limit_joint*120)/(2*np.pi))
+    # ring = RingAttractor(neuron_eq,  
+    #                     syn_profile='cosine',
+    #                     autapse=True,
+    #                     glob_inh=True, w_inh=-17*mV,
+    #                     g_cosine=4*mV)
+    ring = BoundedRingAttractor(neuron_eq,  
+                            syn_profile='cosine',
+                            autapse=True,
+                            glob_inh=True, w_inh=-0.555*mV,
+                            g_cosine=0.1*mV,
+                            limit_neuron=limit_neuron)
     ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
     dt = 0.1*ms
-    inputParams = {'I0': 22.00, 'targetPosition': initial_target_position, 'I_target': 1.0}
+    inputParams = {'I0': 22.00, 'targetPosition': initial_target_position+44, 'I_target': 1.0}
     velocityInput = alpha_value * tv / 1000.0
     # Run the simulation once for the whole trajectory
     pva_angle_vec, pva_magnitude_vec = runSimulation(
@@ -312,6 +320,8 @@ def optimize_alpha_for_velocity(args):
     mse = objective_function(optimal_alpha)
     return target_velocity, optimal_alpha, mse, len(trajectory_segments)
 
+
+
 def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia", output_dir="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/Images/Mujoco_training_onlyVelocity",duration=None):
     """
     Train g(v) function from trajectory files (velocity only).
@@ -362,6 +372,7 @@ def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttrac
     csv_path = os.path.join(output_dir, "velocity_alpha_mapping.csv")
     velocity_data.to_csv(csv_path, index=False)
     print(f"Velocity to alpha mapping saved to {csv_path}")
+    # Plot only velocity and alpha (no acceleration)
     plt.figure(figsize=(12, 10))
     plt.subplot(2, 1, 1)
     plt.scatter(velocity_data_plot['velocity'], velocity_data_plot['optimal_alpha'], 
@@ -494,324 +505,11 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
 
     return validation_df
 
-def optimize_alpha_beta_for_velocity(args):
-    """Helper function for parallel processing to optimize both alpha and beta"""
-    velocity, trajectory_segments = args
-    
-    # Define objective function for this velocity
-    def objective_function(params):
-        alpha, beta = params
-        total_mse = 0
-        total_weight = 0
-        for segment in trajectory_segments:
-            mse, _, _ = simulate_with_trajectory(segment, alpha, beta)
-            segment_weight = len(segment)
-            total_mse += mse * segment_weight
-            total_weight += segment_weight
-        return total_mse / total_weight if total_weight > 0 else float('inf')
-    
-    # Initial guess
-    initial_guess = [0.13, 0.05]  # Starting alpha and beta values
-    
-    # Bounds for parameters
-    bounds = [(0.0, 1.0), (-1.0, 1.0)]  # bounds for alpha and beta
-    
-    # Optimize alpha and beta for this velocity
-    result = minimize(
-        objective_function,
-        initial_guess,
-        bounds=bounds,
-        method='L-BFGS-B',
-        options={'maxiter': 20}
-    )
-    
-    optimal_alpha, optimal_beta = result.x
-    mse = objective_function(result.x)
-    
-    return velocity, optimal_alpha, optimal_beta, mse, len(trajectory_segments)
-
-def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia", 
-                                output_dir="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/Images/Mujoco_training_withAcceleration",
-                                duration=None):
-    """
-    Train g(v) and h(a) functions from trajectory files.
-    
-    Args:
-        folder_path: Path to folder containing trajectory files
-        output_dir: Directory to save output files
-        duration: How many timesteps to use from each file (if None, use all)
-        
-    Returns:
-        velocity_data: DataFrame with velocity -> optimal alpha and beta mapping
-    """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Find all trajectory files
-    file_pattern = os.path.join(folder_path, "*.txt")
-    trajectory_files = glob.glob(file_pattern)
-    
-    if not trajectory_files:
-        raise ValueError(f"No trajectory files found in {folder_path}")
-    
-    print(f"Found {len(trajectory_files)} trajectory files")
-    
-    # Process each file to collect segments by velocity
-    velocity_segments = {}  # Dictionary: {rounded_velocity: [segment_data1, segment_data2, ...]}
-    
-    for file_path in trajectory_files:
-        # Load and preprocess data
-        print(f"Processing file: {os.path.basename(file_path)}")
-        data = load_trajectory_data(file_path)
-        
-        # Group data by rounded velocity to create segments
-        for vel, group in data.groupby('rounded_velocity'):
-            if len(group) >= 3:  # Only use segments with enough data points
-                if vel not in velocity_segments:
-                    velocity_segments[vel] = []
-                velocity_segments[vel].append(group.reset_index(drop=True))
-    
-    # Find optimal alpha and beta for each unique velocity using sequential processing
-    # (multiprocessing doesn't work with Brian2 due to pickling issues)
-    print(f"Optimizing alpha and beta for {len(velocity_segments)} unique velocities...")
-    
-    optimization_results = optimize_alpha_beta_for_velocity_sequential(velocity_segments)
-    
-    # Collect results into a DataFrame
-    velocity_data = pd.DataFrame(
-        optimization_results, 
-        columns=['velocity', 'optimal_alpha', 'optimal_beta', 'mse', 'num_segments']
-    )
-    
-    # Sort by velocity for better visualization
-    velocity_data = velocity_data.sort_values('velocity')
-    
-    # Save velocity -> alpha and beta mapping
-    csv_path = os.path.join(output_dir, "velocity_alpha_beta_mapping.csv")
-    velocity_data.to_csv(csv_path, index=False)
-    print(f"Velocity to alpha and beta mapping saved to {csv_path}")
-    
-    # Create plots for visualization
-    plt.figure(figsize=(15, 15))
-    
-    # First subplot: Alpha vs velocity
-    plt.subplot(3, 1, 1)
-    plt.scatter(velocity_data['velocity'], velocity_data['optimal_alpha'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('Optimal Alpha')
-    plt.title('Alpha Function from Trajectory Data')
-    plt.grid(True)
-    
-    avg_accel = {}
-    for vel, segments in velocity_segments.items():
-        all_accels = []
-        for segment in segments:
-            all_accels.extend(segment['acceleration'].values)
-        avg_accel[vel] = np.mean(all_accels)
-    velocity_data['avg_acceleration'] = velocity_data['velocity'].map(avg_accel)
-    # Second subplot: Beta vs velocity
-    plt.subplot(3, 1, 2)
-    plt.scatter(velocity_data['avg_acceleration'], velocity_data['optimal_beta'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Average Acceleration (deg/s²)')
-    plt.ylabel('Optimal Beta')
-    plt.title('Beta Function from Trajectory Data')
-    plt.grid(True)
-    
-    # Third subplot: v*alpha + a*beta vs velocity
-    plt.subplot(3, 1, 3)
-    velocity_data['combined_effect'] = (
-        velocity_data['velocity'] * velocity_data['optimal_alpha'] + 
-        velocity_data['avg_acceleration'] * velocity_data['optimal_beta']
-    )
-    
-    plt.scatter(velocity_data['velocity'], velocity_data['combined_effect'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('Combined Effect (v*α + a*β)')
-    plt.title('Combined Effect of Velocity and Acceleration')
-    plt.grid(True)
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "alpha_beta_functions.png"))
-    
-    # Create additional plots for individual parameters
-    plt.figure(figsize=(10, 6))
-    plt.scatter(velocity_data['velocity'], velocity_data['optimal_alpha'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('Optimal Alpha')
-    plt.title('Alpha Function from Trajectory Data')
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "alpha_function.png"))
-    
-    plt.figure(figsize=(10, 6))
-    plt.scatter(velocity_data['avg_acceleration'], velocity_data['optimal_beta'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Average Acceleration (deg/s²)')
-    plt.ylabel('Optimal Beta')
-    plt.title('Beta Parameter as Function of Acceleration')
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "beta_vs_acceleration.png"))
-    
-    plt.figure(figsize=(10, 6))
-    plt.scatter(velocity_data['velocity'], velocity_data['combined_effect'], 
-                s=velocity_data['num_segments']*10, alpha=0.7)
-    plt.xlabel('Velocity (deg/s)')
-    plt.ylabel('Combined Effect (v*α + a*β)')
-    plt.title('Combined Effect of Velocity and Acceleration')
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, "combined_effect.png"))
-    
-    return velocity_data
-
-def validate_trajectory_with_gv_ha(data_file, velocity_data):
-    """
-    Validate a trajectory using the learned g(v) and h(a) functions.
-    
-    Args:
-        data_file: Path to trajectory data file
-        velocity_data: DataFrame with velocity -> optimal alpha and beta mapping
-    
-    Returns:
-        mse: Mean squared error using g(v) and h(a) functions
-        bump_pos: Bump positions during simulation
-        gt_pos: Ground truth positions
-    """
-    # Load trajectory data
-    data = load_trajectory_data(data_file)
-    duration = len(data)
-    
-    # Setup for tracking
-    tracking_errors = []
-    bump_positions = []
-    gt_positions = []
-    
-    for data_idx in range(duration):
-        # Create a fresh ring attractor for each timestep to avoid Brian2 reuse issues
-        neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
-        ring = RingAttractor(neuron_eq,  
-                            syn_profile='cosine',
-                            autapse=True,
-                            glob_inh=True, w_inh=-0.555*mV,
-                            g_cosine=0.1*mV)
-        ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
-        
-        # Get velocity, acceleration, and position from data
-        velocity = data['velocity'].iloc[data_idx]
-        acceleration = data['acceleration'].iloc[data_idx]
-        rounded_velocity = data['rounded_velocity'].iloc[data_idx]
-        current_position = data['position'].iloc[data_idx]
-        
-        # Find closest velocity in our mapping
-        if rounded_velocity in velocity_data['velocity'].values:
-            row = velocity_data.loc[velocity_data['velocity'] == rounded_velocity].iloc[0]
-            alpha = row['optimal_alpha']
-            beta = row['optimal_beta']
-        else:
-            # Find closest velocity
-            closest_idx = (velocity_data['velocity'] - rounded_velocity).abs().idxmin()
-            row = velocity_data.loc[closest_idx]
-            alpha = row['optimal_alpha']
-            beta = row['optimal_beta']
-        
-        # Setup input parameters
-        dt = 0.1*ms
-        inputParams = {'I0': 22.00, 'targetPosition': current_position, 'I_target': 1.0}
-        velocityInput = (alpha * velocity / 1000.0) + (beta * acceleration / 1000.0)  # Convert deg/s to deg/ms
-        
-        # Run simulation using the new class method
-        pva_angle, pva_magnitude = runSimulation(ringAttractor=ring, device=None, dt=dt,
-                    inputParams=inputParams, inputType='Uniform',
-                    velInput=velocityInput, runTime=50*ms, plot=False, flag=True)
-        
-        # Store positions
-        bump_positions.append(np.rad2deg(pva_angle))
-        gt_positions.append(current_position)
-        
-        # Calculate error (circular distance)
-        error = min(
-            abs(pva_angle - np.deg2rad(current_position)),
-            2*np.pi - abs(pva_angle - np.deg2rad(current_position))
-        )
-        if np.rad2deg(error) <= 1.5:  # Only count errors within 1.5 degrees
-            error = 0.0
-        tracking_errors.append(error**2)  # Squared error
-    
-    # Calculate final error metrics
-    if tracking_errors:
-        mse = np.mean(tracking_errors)
-        return mse, bump_positions, gt_positions
-    else:
-        return float('inf'), [], []
-
-def validate_all_trajectories(folder_path="./capocaccia", 
-                             output_dir="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/Images/Mujoco_training_withAcceleration", 
-                             velocity_data=None):
-    """
-    Validate all trajectories using the learned g(v) and h(a) functions.
-    
-    Args:
-        folder_path: Path to folder containing trajectory files
-        output_dir: Directory to save output files
-        velocity_data: DataFrame with velocity -> optimal alpha and beta mapping
-                       (if None, load from csv)
-    
-    Returns:
-        validation_results: DataFrame with validation metrics for each file
-    """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    if velocity_data is None:
-        try:
-            csv_path = os.path.join(output_dir, "velocity_alpha_beta_mapping.csv")
-            velocity_data = pd.read_csv(csv_path)
-        except FileNotFoundError:
-            raise ValueError(f"{csv_path} not found. Run training first.")
-    
-    # Find all trajectory files
-    file_pattern = os.path.join(folder_path, "*.txt")
-    trajectory_files = glob.glob(file_pattern)
-    
-    validation_results = []
-    
-    for file_path in trajectory_files:
-        try:
-            mse, bump_pos, gt_pos = validate_trajectory_with_gv_ha(file_path, velocity_data)
-            
-            # Store validation results
-            validation_results.append({
-                'file': os.path.basename(file_path),
-                'mse': mse
-            })
-            
-            # Plot validation
-            plt.figure(figsize=(10, 6))
-            plt.plot(bump_pos, label='Bump Position')
-            plt.plot(gt_pos, label='Ground Truth')
-            plt.title(f"Validation: {os.path.basename(file_path)}, MSE: {mse:.6f}")
-            plt.legend()
-            plt.savefig(os.path.join(output_dir, f"validation_{os.path.basename(file_path).split('.')[0]}.png"))
-            plt.close()
-            
-        except Exception as e:
-            print(f"Error validating file {file_path}: {e}")
-    
-    # Save validation results
-    validation_df = pd.DataFrame(validation_results)
-    validation_df.to_csv(os.path.join(output_dir, "validation_results.csv"), index=False)
-    print(f"Validation results saved to {os.path.join(output_dir, 'validation_results.csv')}")
-    
-    return validation_df
-
-
 
 
 if __name__ == "__main__":
     # Define output directory for acceleration-aware training
-    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training"
+    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training"
     
     # Train g(v) and h(a) functions from trajectory files
     velocity_data = train_from_trajectory_files(
