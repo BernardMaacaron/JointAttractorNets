@@ -10,6 +10,26 @@ from scipy.interpolate import interpn
 # Global parameters
 N = 120  # Number of neurons
 
+def freq2current(freq, tau, tau_ref, Vth, Vreset, Vrest):
+    """Convert firing frequency to input current for LIF neurons."""
+    T = 1/freq
+    k = exp((T-tau_ref)/tau)
+    deltaTh = (Vth - Vrest)
+    deltaReset = (Vreset - Vrest)
+
+    Iext = (k*deltaTh - deltaReset)/(k-1)
+    return Iext
+
+def current2freq(Iext, tau, tau_ref, Vth, Vreset, Vrest):
+    """Calculate firing rate of a LIF neuron given input current."""
+    numerator = Iext + Vreset - Vrest
+    denominator = Iext + Vth - Vrest
+    if denominator <= 0:
+        raise ValueError("Invalid parameters: denominator must be positive.")
+    
+    T = tau * np.log(numerator / denominator) + tau_ref
+    return 1 / T
+
 def computeOptimalJe(numNeurons=120):
     """
     Compute the optimal excitatory weight based on the number of active neurons.
@@ -279,9 +299,12 @@ def find_contour_points(N, f_even_grid, psi_grid, w_grid, je_target, f_0_grid=No
     else:
         f_0_values, _, f_odd_values = calculate_basis_functions(psi_contour, width_contour, N)
 
-    # Close the figure without showing
-    plt.close(fig)
-    
+    # If visualization is requested, finalize the plot
+    if visualize:
+        plt.show()
+    else:
+        plt.close(fig)
+        
     # Return the result in the requested format
     if return_type == 'dataframe':
         df = pd.DataFrame({
