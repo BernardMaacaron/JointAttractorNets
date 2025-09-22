@@ -1,13 +1,16 @@
+
+import os
+os.environ['BRIAN2_LOG_LEVEL'] = 'ERROR'
 # from ring_attractor import RingAttractor
 # from gaussian_input_generator import Gaussian_Input_Generator
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 from pandas.plotting import parallel_coordinates
 import seaborn as sns
 import pandas as pd
 import warnings
 import sys
-import os
 from brian2 import *
 # from gaussian_editor import GuassianEditor
 # from plot_generator import PlotGenerator
@@ -16,11 +19,13 @@ from collections import deque
 import time
 import socket
 # from gp_model import VelocityAlphaModel, get_model_path, train_and_save_model
+warnings.filterwarnings('ignore')
 
 nsm_path = os.path.join(os.path.dirname(__file__), 'Neuron and Synapse Models')
 sys.path.append(nsm_path)
 from ringAttractorClass import RingAttractor
 from ringAttractorClassBoundaries import  BoundedRingAttractor
+from ringAttractorClassExtended import FaithfulBoundedRingAttractor
 from neuronModels import LIF_xi_vel_eq
 
 tools_path = os.path.join(os.path.dirname(__file__), 'Tools')
@@ -52,7 +57,7 @@ def round_velocity(velocity):
 def load_trajectory_data(file_path):
     """Load trajectory data from a text file (velocity only)."""
     data = pd.read_csv(file_path, comment='#', delim_whitespace=True, 
-                       names=['time', 'position', 'velocity'])
+                       names=['time', 'position', 'velocity', 'acceleration'])
     # Round velocities according to our rule
     data['rounded_velocity'] = data['velocity'].apply(round_velocity)
     return data
@@ -61,7 +66,7 @@ def load_trajectory_data(file_path):
 def runSimulation(ringAttractor, device = None, dt=0.1*ms,
                     inputParams = None, inputType='Uniform',
                     velInput = 0.0, runTime=50*ms, plot=False, flag=True,
-                    velocity_vector=None):
+                    velocity_vector=None,training=False):
     
     
     if device == 'cpp_standalone':
@@ -102,33 +107,45 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
     localObjects = [ringAttractor.spikeMonitor]
     net = Network(ringAttractor.BrianObjects + localObjects)
 
-    # 1. Initialization: run 500ms with velocity OFF
+    # 1. Initialization: run 50ms with velocity OFF
     if flag:
         ringAttractor.ring_pool.I_ext = I_ext_array
         ringAttractor.ring_synapses_asym.vel_in = velInput
         ringAttractor.ring_synapses_asym.vel_on = False
-        net.run(500*ms)
+        net.run(50*ms)
         I_ext_array[target_index] -= inputParams.get('I_target', 1.0)*mV
+         
 
     ringAttractor.ring_pool.I_ext = I_ext_array
 
     # 2. Main simulation: for each entry in velocity_vector, run 50ms with correct sign
     pva_angle_vec = []
     pva_magnitude_vec = []
+    if training:
+        velocity_vector=velocity_vector[:200]
     if velocity_vector is not None:
         for v in velocity_vector:
             # Set velocity input sign
             if v >= 0:
-                ringAttractor.ring_synapses_asym.vel_in = abs(velInput)
+                ringAttractor.ring_synapses_asym.vel_in = (velInput)
             else:
-                ringAttractor.ring_synapses_asym.vel_in = -abs(velInput)
+                ringAttractor.ring_synapses_asym.vel_in = -(velInput)
             ringAttractor.ring_synapses_asym.vel_on = True
             net.run(50*ms)
             firingRates = computeInstRate(ringAttractor.spikeMonitor, ringAttractor.numNeurons, meanISI = True)
             pva_angle, pva_magnitude = computePVA(firingRates, ringAttractor.positions)
             pva_angle_vec.append(pva_angle)
             pva_magnitude_vec.append(pva_magnitude)
-        simTime = 500*ms + len(velocity_vector)*50*ms
+        simTime = 50*ms + len(velocity_vector)*50*ms
+        print('FINISHED')
+        plt.figure()
+        ax = plt.gca()
+        raster_plot(ringAttractor.spikeMonitor, ax=ax, stim_periods=(0*second, 50*ms),
+            stim_display_method='highlight', duration=simTime, num_neurons=120, y_axisFull=True)
+        plt.savefig("raster_plot.png")
+        plt.show(block=True)  # Force the plot window to block execution until closed
+
+  
     else:
         # fallback: run once for runTime
         ringAttractor.ring_synapses_asym.vel_in = velInput
@@ -137,8 +154,9 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
         firingRates = computeInstRate(ringAttractor.spikeMonitor, ringAttractor.numNeurons, meanISI = True)
         pva_angle, pva_magnitude = computePVA(firingRates, ringAttractor.positions)
         pva_angle_vec.append(pva_angle-np.deg2rad(44)) # Remove offset of 44 degrees
+        # pva_angle_vec.append(pva_angle)
         pva_magnitude_vec.append(pva_magnitude)
-        simTime = runTime + 500*ms
+        simTime = runTime + 50*ms
 
     if device == 'cpp_standalone':
         device.build(directory = 'internalSim_build', compile=True, run=True, debug=False, clean=False)
@@ -149,7 +167,7 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
     return pva_angle_vec, pva_magnitude_vec
     
 
-def simulate_with_trajectory(data, target_velocity, alpha_value, initial_position=None, duration=None):
+def simulate_with_trajectory(data, target_velocity, alpha_value, initial_position=None, duration=None, training=False):
     """
     Simulate the ring attractor using a trajectory from data file (velocity only).
     Args:
@@ -172,27 +190,33 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
     neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
     limit_joint=np.deg2rad(88)
     limit_neuron=np.round((limit_joint*120)/(2*np.pi))
+    ring= FaithfulBoundedRingAttractor(neuron_eq,  
+                        w_sub=-0.33478*mV,
+                        g_cosine=0.33496*mV,
+                        limit_neuron=int(limit_neuron))
+    
     # ring = RingAttractor(neuron_eq,  
     #                     syn_profile='cosine',
     #                     autapse=True,
-    #                     glob_inh=True, w_inh=-17*mV,
-    #                     g_cosine=4*mV)
-    ring = BoundedRingAttractor(neuron_eq,  
-                            syn_profile='cosine',
-                            autapse=True,
-                            glob_inh=True, w_inh=-0.555*mV,
-                            g_cosine=0.1*mV,
-                            limit_neuron=limit_neuron)
+    #                     glob_inh=True, w_inh=-0.555*mV,
+    #                     g_cosine=0.1*mV)
+    # ring = BoundedRingAttractor(neuron_eq,  
+    #                         syn_profile='cosine',
+    #                         autapse=True,
+    #                         glob_inh=True, w_inh=-0.555*mV,
+    #                         g_cosine=0.1*mV,
+    #                         limit_neuron=limit_neuron)
     ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
     dt = 0.1*ms
-    inputParams = {'I0': 22.00, 'targetPosition': initial_target_position+44, 'I_target': 1.0}
-    velocityInput = alpha_value * tv / 1000.0
+    inputParams = {'I0': 80.00, 'targetPosition': initial_target_position+44, 'I_target': 10.0}
+    # inputParams = {'I0': 80.00, 'targetPosition': initial_target_position, 'I_target': 10.0}
+    velocityInput = alpha_value * tv 
     # Run the simulation once for the whole trajectory
     pva_angle_vec, pva_magnitude_vec = runSimulation(
         ringAttractor=ring, device=None, dt=dt,
         inputParams=inputParams, inputType='Uniform',
         velInput=velocityInput, runTime=50*ms, plot=False, flag=True,
-        velocity_vector=velocity_vector)
+        velocity_vector=velocity_vector,training=training)
 
     # Convert pva_angle_vec to degrees for output, but keep radians for error calculation
     bump_positions = np.rad2deg(pva_angle_vec)
@@ -300,19 +324,19 @@ def optimize_alpha_beta_for_velocity_sequential(velocity_segments):
 
 def optimize_alpha_for_velocity(args):
     """Helper function for parallel processing to optimize only alpha (velocity only, with target_velocity)"""
-    target_velocity, trajectory_segments = args
+    target_velocity, trajectory_segments,training = args
     def objective_function(alpha):
         total_mse = 0
         total_weight = 0
         for segment in trajectory_segments:
-            mse, _, _ = simulate_with_trajectory(segment, target_velocity, alpha)
+            mse, _, _ = simulate_with_trajectory(segment, target_velocity, alpha,training=training)
             segment_weight = len(segment)
             total_mse += mse * segment_weight
             total_weight += segment_weight
         return total_mse / total_weight if total_weight > 0 else float('inf')
     result = minimize_scalar(
         objective_function,
-        bounds=(0.0, 1.0),
+        bounds=(-1.0, 1.0),
         method='bounded',
         options={'maxiter': 20}
     )
@@ -322,7 +346,7 @@ def optimize_alpha_for_velocity(args):
 
 
 
-def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia", output_dir="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/Images/Mujoco_training_onlyVelocity",duration=None):
+def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia", output_dir="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/Images/Mujoco_training_onlyVelocity",duration=None,training=True):
     """
     Train g(v) function from trajectory files (velocity only).
     Args:
@@ -351,7 +375,7 @@ def train_from_trajectory_files(folder_path="/home/fferrari-iit.local/RingAttrac
             print(f"Could not extract velocity from filename: {base}, skipping.")
             continue
         data = load_trajectory_data(file_path)
-        optimization_args.append((target_velocity, [data]))
+        optimization_args.append((target_velocity, [data],training))
     print(f"Optimizing alpha for {len(optimization_args)} target velocities...")
     with Pool(processes=cpu_count()) as pool:
         optimization_results = list(tqdm(
@@ -425,6 +449,7 @@ def validate_trajectory_with_gv(data_file, velocity_data):
     data = load_trajectory_data(data_file)
     # Extract target velocity from filename (for symmetry)
     import re, os
+
     base = os.path.basename(data_file)
     match = re.search(r'([-+]?[0-9]*\.?[0-9]+)', base)
     if match:
@@ -461,7 +486,7 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
     """
     if velocity_data is None:
         try:
-            velocity_data = pd.read_csv("velocity_alpha_mapping.csv")
+            velocity_data = pd.read_csv("/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/velocity_alpha_mapping.csv")
         except FileNotFoundError:
             raise ValueError("velocity_alpha_mapping.csv not found. Run training first.")
 
@@ -475,7 +500,7 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
     for file_path in trajectory_files:
         try:
             mse, bump_pos, gt_pos = validate_trajectory_with_gv(file_path, velocity_data)
-
+            bump_pos = bump_pos - 44
             # Store validation results
             validation_results.append({
                 'file': os.path.basename(file_path),
@@ -492,7 +517,7 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
-            plt.savefig(os.path.join(output_dir, f"gv_validation_{os.path.basename(file_path).split('.')[0]}.png"))
+            # plt.savefig(os.path.join(output_dir, f"gv_validation_{os.path.basename(file_path).split('.')[0]}.png"))
             plt.close()
 
         except Exception as e:
@@ -512,16 +537,17 @@ if __name__ == "__main__":
     output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training"
     
     # Train g(v) and h(a) functions from trajectory files
-    velocity_data = train_from_trajectory_files(
-        folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
-        output_dir=output_dir
-    )
+    # velocity_data = train_from_trajectory_files(
+    #     folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
+    #     output_dir=output_dir,
+    #     training=True
+    # )
     
     # Validate all trajectories using learned g(v) and h(a)
     validation_results = validate_all_trajectories(
         folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
         output_dir=output_dir,
-        velocity_data=velocity_data
+        velocity_data=None
     )
     
     print("Training and validation with acceleration complete!")
