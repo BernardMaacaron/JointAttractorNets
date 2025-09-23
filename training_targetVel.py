@@ -30,7 +30,7 @@ from neuronModels import LIF_xi_vel_eq
 
 tools_path = os.path.join(os.path.dirname(__file__), 'Tools')
 sys.path.append(tools_path)
-from utils import computeInstRate, computePVA
+from utils import computeInstRate, computePVA,computePVATT
 from plottingTools import raster_plot
 
 import glob
@@ -117,33 +117,41 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
          
 
     ringAttractor.ring_pool.I_ext = I_ext_array
-
+    net.run(50*ms)
     # 2. Main simulation: for each entry in velocity_vector, run 50ms with correct sign
     pva_angle_vec = []
     pva_magnitude_vec = []
     if training:
-        velocity_vector=velocity_vector[:200]
+        if len(velocity_vector) > 800:
+            velocity_vector=velocity_vector[:800]
+        if len(velocity_vector) < 800 and len(velocity_vector) > 400:
+            velocity_vector = velocity_vector[:400]
+        if len(velocity_vector) < 400:
+            velocity_vector = velocity_vector[:200]
+
     if velocity_vector is not None:
         for v in velocity_vector:
             # Set velocity input sign
             if v >= 0:
-                ringAttractor.ring_synapses_asym.vel_in = (velInput)
-            else:
                 ringAttractor.ring_synapses_asym.vel_in = -(velInput)
+            else:
+                ringAttractor.ring_synapses_asym.vel_in = (velInput)
             ringAttractor.ring_synapses_asym.vel_on = True
             net.run(50*ms)
-            firingRates = computeInstRate(ringAttractor.spikeMonitor, ringAttractor.numNeurons, meanISI = True)
-            pva_angle, pva_magnitude = computePVA(firingRates, ringAttractor.positions)
-            pva_angle_vec.append(pva_angle)
-            pva_magnitude_vec.append(pva_magnitude)
-        simTime = 50*ms + len(velocity_vector)*50*ms
-        print('FINISHED')
-        plt.figure()
-        ax = plt.gca()
-        raster_plot(ringAttractor.spikeMonitor, ax=ax, stim_periods=(0*second, 50*ms),
-            stim_display_method='highlight', duration=simTime, num_neurons=120, y_axisFull=True)
-        plt.savefig("raster_plot.png")
-        plt.show(block=True)  # Force the plot window to block execution until closed
+            # firingRates = computeInstRate(ringAttractor.spikeMonitor, ringAttractor.numNeurons, meanISI = True)
+            # pva_angle, pva_magnitude = computePVA(firingRates, ringAttractor.positions)
+            # pva_angle_vec.append(pva_angle)
+            # pva_magnitude_vec.append(pva_magnitude)
+        simTime = 100*ms + len(velocity_vector)*50*ms
+        pva_angle, time_windows = computePVATT(ringAttractor.spikeMonitor, ringAttractor.positions,simTime,120, 50*ms,50*ms)
+        if not training:
+            print('FINISHED')
+            plt.figure()
+            ax = plt.gca()
+            raster_plot(ringAttractor.spikeMonitor, ax=ax, stim_periods=(0*second, 50*ms),
+                stim_display_method='highlight', duration=simTime, num_neurons=120, y_axisFull=True)
+            plt.savefig("raster_plot.png")
+            plt.show(block=True)  # Force the plot window to block execution until closed
 
   
     else:
@@ -153,8 +161,8 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
         net.run(runTime)
         firingRates = computeInstRate(ringAttractor.spikeMonitor, ringAttractor.numNeurons, meanISI = True)
         pva_angle, pva_magnitude = computePVA(firingRates, ringAttractor.positions)
-        pva_angle_vec.append(pva_angle-np.deg2rad(44)) # Remove offset of 44 degrees
-        # pva_angle_vec.append(pva_angle)
+        # pva_angle_vec.append(pva_angle-np.deg2rad(44)) # Remove offset of 44 degrees
+        pva_angle_vec.append(pva_angle)
         pva_magnitude_vec.append(pva_magnitude)
         simTime = runTime + 50*ms
 
@@ -164,7 +172,7 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
     if plot:
         raster_plot(ringAttractor.spikeMonitor,duration=simTime, num_neurons=ringAttractor.numNeurons, y_axisFull=True)
 
-    return pva_angle_vec, pva_magnitude_vec
+    return pva_angle, pva_magnitude_vec
     
 
 def simulate_with_trajectory(data, target_velocity, alpha_value, initial_position=None, duration=None, training=False):
@@ -193,7 +201,7 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
     ring= FaithfulBoundedRingAttractor(neuron_eq,  
                         w_sub=-0.33478*mV,
                         g_cosine=0.33496*mV,
-                        limit_neuron=int(limit_neuron))
+                        limit_neuron=None)
     
     # ring = RingAttractor(neuron_eq,  
     #                     syn_profile='cosine',
@@ -208,8 +216,8 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
     #                         limit_neuron=limit_neuron)
     ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
     dt = 0.1*ms
-    inputParams = {'I0': 80.00, 'targetPosition': initial_target_position+44, 'I_target': 10.0}
-    # inputParams = {'I0': 80.00, 'targetPosition': initial_target_position, 'I_target': 10.0}
+    # inputParams = {'I0': 80.00, 'targetPosition': initial_target_position+44, 'I_target': 10.0}
+    inputParams = {'I0': 80.00, 'targetPosition': initial_target_position, 'I_target': 10.0}
     velocityInput = alpha_value * tv 
     # Run the simulation once for the whole trajectory
     pva_angle_vec, pva_magnitude_vec = runSimulation(
@@ -336,7 +344,7 @@ def optimize_alpha_for_velocity(args):
         return total_mse / total_weight if total_weight > 0 else float('inf')
     result = minimize_scalar(
         objective_function,
-        bounds=(-1.0, 1.0),
+        bounds=(-5.0, 5.0),
         method='bounded',
         options={'maxiter': 20}
     )
@@ -486,7 +494,7 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
     """
     if velocity_data is None:
         try:
-            velocity_data = pd.read_csv("/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/velocity_alpha_mapping.csv")
+            velocity_data = pd.read_csv("/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/velocity_alpha_mapping.csv")
         except FileNotFoundError:
             raise ValueError("velocity_alpha_mapping.csv not found. Run training first.")
 
@@ -500,7 +508,8 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
     for file_path in trajectory_files:
         try:
             mse, bump_pos, gt_pos = validate_trajectory_with_gv(file_path, velocity_data)
-            bump_pos = bump_pos - 44
+            # bump_pos = bump_pos - 44
+            bump_pos_wrapped = ((bump_pos + 180) % 360) - 180
             # Store validation results
             validation_results.append({
                 'file': os.path.basename(file_path),
@@ -534,14 +543,14 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
 
 if __name__ == "__main__":
     # Define output directory for acceleration-aware training
-    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training"
+    output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training"
     
     # Train g(v) and h(a) functions from trajectory files
-    # velocity_data = train_from_trajectory_files(
-    #     folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
-    #     output_dir=output_dir,
-    #     training=True
-    # )
+    velocity_data = train_from_trajectory_files(
+        folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
+        output_dir=output_dir,
+        training=True
+    )
     
     # Validate all trajectories using learned g(v) and h(a)
     validation_results = validate_all_trajectories(
