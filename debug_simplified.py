@@ -10,11 +10,11 @@ from brian2 import *
 nsm_path = os.path.join(os.path.dirname(__file__), 'Neuron and Synapse Models')
 sys.path.append(nsm_path)
 from ringAttractorClassExtended import FaithfulBoundedRingAttractor
-from neuronModels import LIF_xi_vel_eq
+from neuronModels import LIF_xi_vel_eq,LIF_synapticDecay_xi_vel_eq
 
 tools_path = os.path.join(os.path.dirname(__file__), 'Tools')
 sys.path.append(tools_path)
-from utils import computeInstRate, computePVA
+from utils import computeInstRate, computePVA, computePVATT
 from plottingTools import raster_plot
 import glob
 
@@ -24,8 +24,8 @@ def main_simple_5s(velInput=1.0):
     total_time = 5*second
     dt = 0.1*ms
     velInput = velInput
-    neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
-    ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-0.33478*mV, g_cosine=0.33496*mV, limit_neuron=None)
+    neuron_eq = Equations(LIF_synapticDecay_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV,tau_s=13*ms)
+    ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-0.33478*mV, g_cosine=0.33496*mV, limit_neuron=29)
     ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=dt)
     defaultclock.dt = dt
     I0 = 80.0 * mV
@@ -41,7 +41,7 @@ def main_simple_5s(velInput=1.0):
     ring.ring_pool.I_ext = I_ext_array
     ring.ring_synapses_asym.vel_in = velInput
     ring.ring_synapses_asym.vel_on = False
-    net.run(50*ms)
+    net.run(200*ms)
     I_ext_array[10] -= 10*mV
     ring.ring_pool.I_ext = I_ext_array
     
@@ -58,9 +58,11 @@ def main_simple_5s(velInput=1.0):
         net.run(50*ms)
         simTime += 50*ms
         firingRates = computeInstRate(ring.spikeMonitor, ring.numNeurons, meanISI=True)
-        pva_angle, _ = computePVA(firingRates, ring.positions)
-        pva_angles.append(np.rad2deg(pva_angle))
+        # pva_angle, _ = computePVA(firingRates, ring.positions)
         pva_times.append(simTime/second)
+    pva_angle, time_windows = computePVATT(ring.spikeMonitor, ring.positions,total_time,120, 50*ms,10*ms)
+    # pva_angles.append(np.rad2deg(pva_angle))
+    
     # Plot finale raster
     plt.figure(figsize=(10, 6))
     ax = plt.gca()
@@ -71,7 +73,7 @@ def main_simple_5s(velInput=1.0):
     plt.show(block=True)
     # Plot PVA angle vs time
     plt.figure(figsize=(8, 4))
-    plt.plot(np.array(pva_times)*1000, pva_angles, marker='o')
+    plt.plot(np.array(time_windows)*1000, np.rad2deg(pva_angle), marker='o')
     plt.xlabel('Time (ms)')
     plt.ylabel('PVA angle (deg)')
     plt.title('PVA angle vs time (ogni 50ms)')
@@ -86,4 +88,4 @@ def main_simple_5s(velInput=1.0):
 
 
 if __name__ == "__main__":
-    main_simple_5s(velInput=-10.87)
+    main_simple_5s(velInput=18*0.998)
