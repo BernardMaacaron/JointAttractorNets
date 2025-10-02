@@ -64,7 +64,7 @@ w_asym : volt
 LIF_synapticDecay_xi_vel_eq = '''
 dV/dt = (V_rest - V + I_syn + I_ext + I_vel)/tau + sigma_noise*xi*tau**(-0.5) : volt (unless refractory)
 I_ext : volt
-I_vel : volt
 theta = 2*pi*i/N : 1
 dI_syn/dt = -I_syn/tau_s : volt
+dI_vel/dt = -I_vel/tau_s : volt
 '''
