@@ -26,7 +26,7 @@ sys.path.append(nsm_path)
 from ringAttractorClass import RingAttractor
 from ringAttractorClassBoundaries import  BoundedRingAttractor
 from ringAttractorClassExtended import FaithfulBoundedRingAttractor
-from neuronModels import LIF_xi_vel_eq
+from neuronModels import LIF_xi_vel_eq,LIF_synapticDecay_xi_vel_eq
 
 tools_path = os.path.join(os.path.dirname(__file__), 'Tools')
 sys.path.append(tools_path)
@@ -195,13 +195,16 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
     position_vector = data['position'].iloc[:].values
     # Use the first position as the initial target position
     initial_target_position = position_vector[0]
-    neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
+    # neuron_eq = Equations(LIF_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV)
+    neuron_eq = Equations(LIF_synapticDecay_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV,tau_s=10*ms)
+    
     limit_joint=np.deg2rad(88)
     limit_neuron=np.round((limit_joint*120)/(2*np.pi))
-    ring= FaithfulBoundedRingAttractor(neuron_eq,  
-                        w_sub=-0.33478*mV,
-                        g_cosine=0.33496*mV,
-                        limit_neuron=None)
+    ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-10.333033268750986*mV, g_cosine=10.333033257636599*mV, limit_neuron=None)
+    # ring= FaithfulBoundedRingAttractor(neuron_eq,  
+    #                     w_sub=-0.33478*mV,
+    #                     g_cosine=0.33496*mV,
+    #                     limit_neuron=None)
     
     # ring = RingAttractor(neuron_eq,  
     #                     syn_profile='cosine',
@@ -218,6 +221,7 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
     dt = 0.1*ms
     # inputParams = {'I0': 80.00, 'targetPosition': initial_target_position+44, 'I_target': 10.0}
     inputParams = {'I0': 80.00, 'targetPosition': initial_target_position, 'I_target': 10.0}
+    alpha_value = 0.0013
     velocityInput = alpha_value * tv 
     # Run the simulation once for the whole trajectory
     pva_angle_vec, pva_magnitude_vec = runSimulation(
@@ -508,8 +512,13 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
     for file_path in trajectory_files:
         try:
             mse, bump_pos, gt_pos = validate_trajectory_with_gv(file_path, velocity_data)
+            df = pd.DataFrame({'gt_pos': gt_pos, 'bump_pos': bump_pos})
             # bump_pos = bump_pos - 44
-            bump_pos_wrapped = ((bump_pos + 180) % 360) - 180
+            bump_pos = ((bump_pos + 180) % 360) - 180
+            df = pd.DataFrame({'gt_pos': gt_pos, 'bump_pos': bump_pos})
+            #save to csv
+            df.to_csv(os.path.join(output_dir, f"gv_validation_{os.path.basename(file_path)}"), index=False)
+            
             # Store validation results
             validation_results.append({
                 'file': os.path.basename(file_path),
@@ -526,7 +535,7 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
-            # plt.savefig(os.path.join(output_dir, f"gv_validation_{os.path.basename(file_path).split('.')[0]}.png"))
+            plt.savefig(os.path.join(output_dir, f"gv_validation_{os.path.basename(file_path).split('.')[0]}.png"))
             plt.close()
 
         except Exception as e:
@@ -546,11 +555,11 @@ if __name__ == "__main__":
     output_dir = "/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training"
     
     # Train g(v) and h(a) functions from trajectory files
-    velocity_data = train_from_trajectory_files(
-        folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
-        output_dir=output_dir,
-        training=True
-    )
+    # velocity_data = train_from_trajectory_files(
+    #     folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
+    #     output_dir=output_dir,
+    #     training=True
+    # )
     
     # Validate all trajectories using learned g(v) and h(a)
     validation_results = validate_all_trajectories(

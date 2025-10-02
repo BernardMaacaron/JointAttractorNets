@@ -21,11 +21,12 @@ import glob
 
 
 def main_simple_5s(velInput=1.0):
-    total_time = 5*second
+    total_time = 8*second
     dt = 0.1*ms
     velInput = velInput
-    neuron_eq = Equations(LIF_synapticDecay_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV,tau_s=13*ms)
-    ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-0.33478*mV, g_cosine=0.33496*mV, limit_neuron=29)
+    neuron_eq = Equations(LIF_synapticDecay_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV,tau_s=10*ms)
+    # ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-0.33478*mV, g_cosine=0.33496*mV, limit_neuron=None)
+    ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-10.14*mV, g_cosine=10.14*mV, limit_neuron=29)
     ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=dt)
     defaultclock.dt = dt
     I0 = 80.0 * mV
@@ -41,7 +42,7 @@ def main_simple_5s(velInput=1.0):
     ring.ring_pool.I_ext = I_ext_array
     ring.ring_synapses_asym.vel_in = velInput
     ring.ring_synapses_asym.vel_on = False
-    net.run(200*ms)
+    net.run(50*ms)
     I_ext_array[10] -= 10*mV
     ring.ring_pool.I_ext = I_ext_array
     
@@ -88,4 +89,4 @@ def main_simple_5s(velInput=1.0):
 
 
 if __name__ == "__main__":
-    main_simple_5s(velInput=18*0.998)
+    main_simple_5s(velInput=2*0.998)

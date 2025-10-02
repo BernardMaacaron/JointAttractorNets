@@ -71,7 +71,7 @@ def runSimulation(ringAttractor, device = None, dt=0.1*ms,
         I_ext_array += I0 * np.exp(-(d**2) / (2 * stimulus_width**2))
     
     elif inputType == 'Uniform':
-        # Equal input to all neurons
+        # Equal input to all neurons 
         I_ext_array += np.ones(ringAttractor.numNeurons) * I0
 
         target_index = ringAttractor._get_neuron_index(targetPosition, in_degrees=True)
