@@ -232,7 +232,12 @@ def simulate_with_trajectory(data, target_velocity, alpha_value, initial_positio
 
     # Convert pva_angle_vec to degrees for output, but keep radians for error calculation
     bump_positions = np.rad2deg(pva_angle_vec)
-    gt_positions = position_vector
+    
+    # Ensure gt_positions has the same length as bump_positions
+    if len(pva_angle_vec) > 0:
+        gt_positions = position_vector[:len(pva_angle_vec)]
+    else:
+        gt_positions = position_vector
 
     # Calculate error (circular distance) for each segment
     errors = []
@@ -512,7 +517,7 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
     for file_path in trajectory_files:
         try:
             mse, bump_pos, gt_pos = validate_trajectory_with_gv(file_path, velocity_data)
-            df = pd.DataFrame({'gt_pos': gt_pos, 'bump_pos': bump_pos})
+            bump_pos=bump_pos[2:]
             # bump_pos = bump_pos - 44
             bump_pos = ((bump_pos + 180) % 360) - 180
             df = pd.DataFrame({'gt_pos': gt_pos, 'bump_pos': bump_pos})
