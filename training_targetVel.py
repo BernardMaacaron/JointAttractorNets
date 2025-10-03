@@ -553,7 +553,86 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
 
     return validation_df
 
+def plot_comparison(path1, path2):
+    """Plot comparison between two validation result files."""
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    
+    df1 = pd.read_csv(path1)
+    df2 = pd.read_csv(path2)
+    
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.plot(df1['gt_pos'], label='Ground Truth', linewidth=2)
+    ax.plot(df1['bump_pos'], label='Bump Position (Boundary)', linestyle='--', color='red', linewidth=2)
+    ax.plot(df2['bump_pos'], label='Bump Position (No Boundary)', linestyle=':', color='orange', linewidth=2)
+    ax.set_title(f"Comparison of Validation Results")
+    ax.set_xlabel('Time (ms)')
+    ax.set_ylabel('Position (deg)')
+    ax.legend()
+    ax.grid(True)
 
+    # Add top subplot for velocity step function
+    divider = make_axes_locatable(ax)
+    tax = divider.append_axes("top", size="15%", pad=0.1)
+
+    # Create target velocity step function based on ground truth direction changes
+    gt_pos = df1['gt_pos'].values
+    
+    # Find direction changes in ground truth (zero crossings of derivative)
+    gt_diff = np.diff(gt_pos)
+    
+    # Smooth the derivative to avoid noise
+    from scipy.ndimage import uniform_filter1d
+    gt_diff_smooth = uniform_filter1d(gt_diff, size=3)
+    
+    # Find zero crossings (derivative sign changes)
+    direction_changes = [0]  # Always start at t=0
+    
+    # Look for sign changes in smoothed derivative
+    for i in range(1, len(gt_diff_smooth)-1):
+        if gt_diff_smooth[i-1] * gt_diff_smooth[i+1] < 0:  # Sign change detected
+            # Make sure we don't add changes too close together
+            if len(direction_changes) == 0 or i - direction_changes[-1] > 10:
+                direction_changes.append(i)
+    
+    # Create step function for velocity
+    time_extended = []
+    vel_extended = []
+    
+    for idx, change_point in enumerate(direction_changes):
+        vel_amplitude = 60.0 if idx % 2 == 0 else -60.0  # Alternate +60, -60, +60, -60...
+        
+        # Add vertical transition at direction change
+        time_extended.extend([change_point, change_point])
+        if idx == 0:
+            vel_extended.extend([0, vel_amplitude])  # Start from 0 for first step
+        else:
+            prev_amplitude = -vel_amplitude  # Previous amplitude (opposite sign)
+            vel_extended.extend([prev_amplitude, vel_amplitude])
+        
+        # Continue at this level until next change (or end)
+        if idx < len(direction_changes) - 1:
+            next_change = direction_changes[idx + 1]
+            time_extended.append(next_change)
+            vel_extended.append(vel_amplitude)
+        else:
+            # Last segment - extend to end
+            time_extended.append(len(gt_pos) - 1)
+            vel_extended.append(vel_amplitude)
+    
+    # Convert to numpy arrays
+    time_extended = np.array(time_extended)
+    vel_extended = np.array(vel_extended)
+    
+    # Plot step function
+    tax.plot(time_extended, vel_extended, linewidth=2, color='green')
+    tax.set_ylabel('Target Vel\n(deg/s)', fontsize=10)
+    tax.set_ylim([-70, 70])
+    tax.grid(True, alpha=0.3)
+    tax.set_xlim(ax.get_xlim())
+
+    plt.tight_layout()
+    plt.savefig("gv_validation_comparison.png")
+    plt.show()
 
 if __name__ == "__main__":
     # Define output directory for acceleration-aware training
@@ -567,10 +646,14 @@ if __name__ == "__main__":
     # )
     
     # Validate all trajectories using learned g(v) and h(a)
-    validation_results = validate_all_trajectories(
-        folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
-        output_dir=output_dir,
-        velocity_data=None
-    )
+    # validation_results = validate_all_trajectories(
+    #     folder_path="/home/fferrari-iit.local/RingAttractor/Ring_Attractor_madeByMe/capocaccia/data_neck",
+    #     output_dir=output_dir,
+    #     velocity_data=None
+    # )
+
+    path1="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/gv_validation_run_60.0.txt"
+    path2="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/gv_validation_run_60.0.txt"
+    plot_comparison(path1=path1,path2=path2)
     
     print("Training and validation with acceleration complete!")
