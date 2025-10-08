@@ -564,15 +564,28 @@ def plot_comparison(path1, path2):
     ax.plot(df1['gt_pos'], label='Ground Truth', linewidth=2)
     ax.plot(df1['bump_pos'], label='Bump Position (Boundary)', linestyle='--', color='red', linewidth=2)
     ax.plot(df2['bump_pos'], label='Bump Position (No Boundary)', linestyle=':', color='orange', linewidth=2)
-    ax.set_title(f"Comparison of Validation Results")
-    ax.set_xlabel('Time (ms)')
-    ax.set_ylabel('Position (deg)')
+    
+    # Add upper and lower boundary lines at ±44 degrees
+    ax.axhline(y=44, color='blue', linestyle='--', linewidth=2, alpha=0.8)
+    ax.axhline(y=-44, color='blue', linestyle='--', linewidth=2, alpha=0.8)
+    
+    # Add boundary labels aligned to start from 5ms
+    ax.text(5, 46, 'Upper boundary', ha='left', va='bottom', 
+            fontsize=14, weight='bold', color='blue')
+    ax.text(5, -46, 'Lower boundary', ha='left', va='top', 
+            fontsize=14, weight='bold', color='blue')
+    
+    # ax.set_title(f"Comparison of Validation Results", weight='bold')
+    ax.set_xlabel('Time (ms)', weight='bold',fontsize=14)
+    ax.set_ylabel('Position (deg)', weight='bold',fontsize=14)
+    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.set_ylim([-90, 90])
     ax.legend()
     ax.grid(True)
 
     # Add top subplot for velocity step function
     divider = make_axes_locatable(ax)
-    tax = divider.append_axes("top", size="15%", pad=0.1)
+    tax = divider.append_axes("top", size="15%", pad=0.3)
 
     # Create target velocity step function based on ground truth direction changes
     gt_pos = df1['gt_pos'].values
@@ -625,14 +638,267 @@ def plot_comparison(path1, path2):
     
     # Plot step function
     tax.plot(time_extended, vel_extended, linewidth=2, color='green')
-    tax.set_ylabel('Target Vel\n(deg/s)', fontsize=10)
+    tax.set_ylabel('Target Vel\n(deg/s)', fontsize=14, weight='bold')
     tax.set_ylim([-70, 70])
+    tax.tick_params(axis='y', which='major', labelsize=12)
     tax.grid(True, alpha=0.3)
     tax.set_xlim(ax.get_xlim())
 
     plt.tight_layout()
-    plt.savefig("gv_validation_comparison.png")
+    plt.savefig("gv_validation_comparison_compressed.png")
     plt.show()
+
+def change_velocity_offline(v, theta):
+    """
+    Brian2 implementation recreating the exact same behavior as sim_capocaccia_changeVelocity_offline.
+    
+    Args:
+        v: Velocity amplitude parameter (used in sinusoidal velocity profile)
+        theta: Initial angle position in degrees
+    """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+   
+    # Initialize Brian2 ring attractor (equivalent to the hardcoded one)
+    neuron_eq = Equations(LIF_synapticDecay_xi_vel_eq, tau=10*ms, V_rest=-70*mV, sigma_noise=0.0*mV, tau_s=10*ms)
+    ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-10.333033268750986*mV, g_cosine=10.333033257636599*mV, limit_neuron=None)
+    # ring = FaithfulBoundedRingAttractor(neuron_eq, w_sub=-82.1212*mV, g_cosine=82.8283*mV, limit_neuron=None)
+
+    ring.ring_pool.run_regularly('V = clip(V, -80*mV, inf*volt)', dt=0.1*ms)
+    
+    # Set up simulation parameters
+    dt = 0.1*ms
+    defaultclock.dt = dt
+    total_time_steps = 900  # 900 time steps = 900ms total
+    simulation_time = total_time_steps * 1*ms  # 900ms total
+    
+    # Use same input parameters as other functions
+    inputParams = {'I0': 80.00, 'targetPosition': theta, 'I_target': 10.0}
+    
+    # Calculate external input based on uniform input type (same as runSimulation)
+    I_ext_array = np.zeros(ring.numNeurons) * mV
+    I_ext_array += np.ones(ring.numNeurons) * inputParams['I0'] * mV  # Uniform input to all neurons
+    
+    # Add boost to target neuron
+    target_index = ring._get_neuron_index(inputParams['targetPosition'], in_degrees=True)
+    I_ext_array[target_index] += inputParams['I_target'] * mV
+    
+    # Store initial input for plotting
+    initial_cue = I_ext_array / mV  # Convert back to dimensionless for plotting
+    
+    # Track data for plotting
+    ground_truth_positions = []
+    velocity_profile = []
+    
+    # Current position tracker
+    current_position = theta
+    
+    # Setup monitors
+    ring.spikeMonitor = SpikeMonitor(ring.ring_pool)
+    state_monitor = StateMonitor(ring.ring_pool, 'V', record=True)
+    
+    localObjects = [ring.spikeMonitor, state_monitor]
+    net = Network(ring.BrianObjects + localObjects)
+    
+    # 1. Initialization: run 50ms with velocity OFF and input ON
+    ring.ring_pool.I_ext = I_ext_array
+    ring.ring_synapses_asym.vel_in = 0
+    ring.ring_synapses_asym.vel_on = False
+    
+    # Track the first 50ms with velocity = 0
+    for _ in range(50):
+        net.run(1*ms)
+        velocity_profile.append(0)
+        ground_truth_positions.append(current_position)
+    
+    # Remove target boost after initialization
+    I_ext_array[target_index] -= inputParams['I_target'] * mV
+    ring.ring_pool.I_ext = I_ext_array
+    
+    # Track the next 50ms with velocity = 0
+    for _ in range(50):
+        net.run(1*ms)
+        velocity_profile.append(0)
+        ground_truth_positions.append(current_position)
+    
+    # 2. Main simulation: run the full trajectory with velocity changes
+    # Create velocity vector for the remaining simulation
+    remaining_steps = total_time_steps - 100  # Already ran 100ms (2*50ms)
+    
+    for j in range(100, 900):  # Run until 900ms to get full 900 time points
+        # Define acceleration and deceleration phases (same as original)
+        accel_start = 180  # Start acceleration 20ms before main velocity phase
+        accel_end = 200    # End acceleration at main velocity phase start
+        decel_start = 780  # Start deceleration 20ms before velocity phase end
+        decel_end = 800    # End deceleration at main velocity phase end
+        
+        # Calculate velocity based on phase
+        if accel_start <= j < accel_end:
+            # Acceleration phase: smooth transition from 0 to target velocity
+            progress = (j - accel_start) / (accel_end - accel_start)  # 0 to 1
+            # Use smooth sigmoid-like transition
+            smooth_factor = 3 * progress**2 - 2 * progress**3  # smooth step function
+            target_velocity = np.sin(j/200) * 2
+            velocity = target_velocity * smooth_factor
+            
+        elif 200 <= j < 780:
+            # Main velocity phase: normal sinusoidal velocity
+            velocity = np.sin(j/200) * 2
+            
+        elif decel_start <= j < decel_end:
+            # Deceleration phase: smooth transition from target velocity to 0
+            progress = (j - decel_start) / (decel_end - decel_start)  # 0 to 1
+            # Use smooth sigmoid-like transition (reverse)
+            smooth_factor = 1 - (3 * progress**2 - 2 * progress**3)  # smooth step function (inverted)
+            target_velocity = np.sin(j/200) * 2
+            velocity = target_velocity * smooth_factor
+            
+        else:
+            # No movement phase
+            velocity = 0
+        
+        # Update position for ground truth tracking
+        current_position -= velocity
+        current_position = current_position % 360
+        ground_truth_positions.append(current_position)
+        velocity_profile.append(velocity)
+        
+        # Apply velocity to the network
+        if velocity != 0:
+            # Calculate alpha using the same functions as original
+            if velocity > 0:
+                alpha = 0.16*10 # Fixed alpha for positive velocities
+            else:
+                alpha = - 0.16*10 # Fixed alpha for negative velocities
+            
+            # Set velocity input with correct sign (same as runSimulation)
+            velocity_input = alpha * velocity
+            if velocity >= 0:
+                ring.ring_synapses_asym.vel_in = velocity_input
+            else:
+                ring.ring_synapses_asym.vel_in = -velocity_input
+            ring.ring_synapses_asym.vel_on = True
+        else:
+            ring.ring_synapses_asym.vel_in = 0
+            ring.ring_synapses_asym.vel_on = False
+        
+        # Run one time step (1ms)
+        net.run(1*ms)
+    
+    # Create the exact same plot as the original function
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Create divider for axes with more spacing
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("left", size="12%", pad=0.3)
+    rax = divider.append_axes("right", size="12%", pad=0.3)
+    tax = divider.append_axes("top", size="18%", pad=0.3)
+    
+    # Create manual raster plot with millisecond x-axis
+    total_sim_time = 900*ms  # 900 time steps * 1ms = 900ms
+    
+    # Get spike data
+    spike_times_ms = np.array(ring.spikeMonitor.t / ms)
+    spike_neurons_idx = np.array(ring.spikeMonitor.i)
+    
+    # Plot spikes as scatter plot with even bigger and bolder black markers
+    ax.scatter(spike_times_ms, spike_neurons_idx, s=6.0, c='black', marker='|', linewidths=2.0)
+    ax.set_xlim(0, 900)  # Set x-axis from 0 to 900 ms
+    ax.set_ylim(0, ring.numNeurons)
+    
+    # Add square highlighting the time window for firing rate computation (600-650 ms)
+    time_start_ms, time_end_ms = 600, 650
+    rect = plt.Rectangle((time_start_ms, 0), time_end_ms - time_start_ms, ring.numNeurons, 
+                        linewidth=2, edgecolor='red', facecolor='none', alpha=0.7)
+    ax.add_patch(rect)
+    
+    # Add box highlighting the input period (0-100 ms) in dark orange
+    input_start_ms, input_end_ms = 0, 100
+    input_rect = plt.Rectangle((input_start_ms, 0), input_end_ms - input_start_ms, ring.numNeurons, 
+                              linewidth=3, edgecolor='darkorange', facecolor='none', alpha=0.7)
+    ax.add_patch(input_rect)
+    
+    # Plot ground truth as blue scatter points starting from 0ms
+    time_points_ms = np.arange(len(ground_truth_positions))  # Start from 0ms
+    # Convert ground truth positions to pixel coordinates (0-120 range)
+    gt_pixels = np.array(ground_truth_positions) * ring.numNeurons / 360
+    ax.scatter(time_points_ms, gt_pixels, c='blue', s=10, label='Ground Truth', alpha=0.8)
+    
+    # Add a dummy plot for spikes legend entry
+    ax.scatter([], [], c='black', s=20, marker='s', label='Spikes')
+    
+    # Set up main axis with bold text (removed y-axis title)
+    ax.set_xlabel("Time (ms)", fontsize=18, weight='bold')
+    ax.legend(fontsize=16)
+    
+    # Remove y-axis ticks and labels from main raster plot
+    ax.set_yticks([])
+    ax.set_yticklabels([])
+    # Ensure x-axis labels are visible and properly sized
+    ax.tick_params(axis='x', labelsize=16, colors='black')
+    
+    # Plot velocity profile on top axis starting from 0ms
+    velocity_time_ms = np.arange(len(velocity_profile))  # Start from 0ms
+    tax.plot(velocity_time_ms, velocity_profile, 'g-', linewidth=3, label='Velocity')
+    tax.set_ylabel("Velocity\n(deg/ms)", fontsize=16, weight='bold')
+    tax.set_xlim(0, 900)  # Match main plot x-limits
+    tax.set_xticklabels([])  # Remove x-axis labels for cleaner look
+    tax.grid(True, alpha=0.3)
+    # Add y-axis labels for velocity
+    tax.tick_params(axis='y', labelsize=14)
+    # Ensure velocity plot is visible
+    if len(velocity_profile) > 0:
+        y_margin = (max(velocity_profile) - min(velocity_profile)) * 0.1
+        tax.set_ylim(min(velocity_profile) - y_margin, max(velocity_profile) + y_margin)
+    
+    # Compute and plot firing rate profile on right axis (600-650 ms)
+    spike_times_ms = np.array(ring.spikeMonitor.t / ms)
+    spike_neurons_idx = np.array(ring.spikeMonitor.i)
+    
+    # Filter spikes in the time window
+    time_mask = (spike_times_ms >= time_start_ms) & (spike_times_ms <= time_end_ms)
+    firing_rate = np.zeros(ring.numNeurons)
+    for neuron_idx in range(ring.numNeurons):
+        neuron_spikes = np.sum((spike_neurons_idx[time_mask] == neuron_idx))
+        firing_rate[neuron_idx] = neuron_spikes / ((time_end_ms - time_start_ms) * 1e-3)  # Convert to Hz
+    
+    # Plot firing rate profile with bold text
+    angle_positions = np.linspace(0, ring.numNeurons, len(firing_rate))  # Normal orientation: 0 to 120
+    rax.plot(firing_rate, angle_positions, 'r-', linewidth=2)
+    rax.set_xlabel("Firing\nRate (Hz)", fontsize=16, weight='bold')
+    rax.set_ylim(0, ring.numNeurons)
+    # Remove y-axis ticks and labels from firing rate plot
+    rax.set_yticks([])
+    rax.set_yticklabels([])
+    rax.tick_params(axis='x', labelsize=14)
+    rax.grid(True, alpha=0.3)
+    
+    # Plot initial input cue on left axis - fix the conversion and make visible
+    angle_axis = np.linspace(0, 360, len(initial_cue))
+    # Convert to milliamps properly - initial_cue is in volts, convert to mA
+    initial_cue_ma = initial_cue  # Convert from A to mA
+    # Plot with correct orientation (0° at bottom, 360° at top)
+    cax.plot(initial_cue_ma, np.linspace(0, ring.numNeurons, len(initial_cue)), color='darkorange', linewidth=3)
+    cax.set_xlabel("Input Current\n(mA)", fontsize=16, weight='bold')
+    # Set appropriate x-axis limits - fix the scale issue
+    cax.set_xlim(np.min(initial_cue_ma)-10, np.max(initial_cue_ma)+5)  # Scale back to reasonable range
+    cax.set_ylim(0, ring.numNeurons)
+    
+    # Set y-axis ticks to show angles with 0° at bottom
+    angle_ticks = np.arange(0, ring.numNeurons + 1, 20)
+    angle_labels = [int(tick * 360 / ring.numNeurons) for tick in angle_ticks]
+    cax.set_yticks(angle_ticks)
+    cax.set_yticklabels(angle_labels)
+    cax.tick_params(axis='y', labelsize=14)
+    cax.tick_params(axis='x', labelsize=14)
+    # Add y-axis title "Angle (degree)" on the left with bold text and larger size
+    cax.set_ylabel("Angle (degree)", fontsize=20, weight='bold')
+    cax.invert_xaxis()
+    
+    plt.tight_layout()
+    plt.savefig('brian2_prova.png') 
+    plt.show()
+    
+    return ground_truth_positions, velocity_profile, ring.spikeMonitor
 
 if __name__ == "__main__":
     # Define output directory for acceleration-aware training
@@ -652,8 +918,10 @@ if __name__ == "__main__":
     #     velocity_data=None
     # )
 
-    path1="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/gv_validation_run_60.0.txt"
-    path2="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/gv_validation_run_60.0.txt"
+    path1="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/gv_validation_compressed_run_60.0.txt"
+    path2="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/gv_validation_compressed_run_60.0.txt"
     plot_comparison(path1=path1,path2=path2)
+    
+    # change_velocity_offline(v=2, theta=90)
     
     print("Training and validation with acceleration complete!")
