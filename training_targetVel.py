@@ -751,6 +751,284 @@ def plot_comparison(path1, path2, path3, path4):
     plt.savefig("gv_validation_comparison_compressed.png")
     plt.show()
 
+def analyze_tracking_performance(path1, path2, path3=None, path4=None, save_results=True):
+    """
+    Analyze tracking performance between bounded and unbounded models.
+    
+    Args:
+        path1: Path to bounded model results (limited motion data)
+        path2: Path to unbounded model results (limited motion data)
+        path3: Path to bounded model results (wide motion data) - optional
+        path4: Path to unbounded model results (wide motion data) - optional
+        save_results: Whether to save statistical results to file
+    
+    Returns:
+        stats_results: Dictionary containing all statistical analysis results
+    """
+    from scipy import stats
+    from scipy.signal import find_peaks
+    import matplotlib.pyplot as plt
+    
+    # Load data
+    df1 = pd.read_csv(path1)  # Bounded model (limited motion)
+    df2 = pd.read_csv(path2)  # Unbounded model (limited motion)
+    
+    # Optional wide motion data
+    df3 = pd.read_csv(path3) if path3 else None
+    df4 = pd.read_csv(path4) if path4 else None
+    
+    def circular_error(predicted, ground_truth):
+        """Calculate circular error between predicted and ground truth positions."""
+        error = predicted - ground_truth
+        # Handle circular wraparound
+        error = ((error + 180) % 360) - 180
+        return np.abs(error)
+    
+    def detect_movement_phases(gt_positions, min_distance=5):
+        """Detect up/down movement phases based on ground truth positions."""
+        # Find peaks and troughs
+        peaks, _ = find_peaks(gt_positions, distance=min_distance)
+        troughs, _ = find_peaks(-gt_positions, distance=min_distance)
+        
+        # Combine and sort all turning points
+        turning_points = np.sort(np.concatenate([peaks, troughs]))
+        
+        # Create phases: each phase is between consecutive turning points
+        phases = []
+        for i in range(len(turning_points) - 1):
+            start_idx = turning_points[i]
+            end_idx = turning_points[i + 1]
+            phase_type = 'up' if gt_positions[end_idx] > gt_positions[start_idx] else 'down'
+            phases.append({
+                'start': start_idx,
+                'end': end_idx,
+                'type': phase_type,
+                'start_pos': gt_positions[start_idx],
+                'end_pos': gt_positions[end_idx]
+            })
+        
+        return phases
+    
+    def analyze_dataset(bounded_df, unbounded_df, dataset_name):
+        """Analyze a single dataset (limited or wide motion)."""
+        results = {'dataset': dataset_name}
+        
+        # Calculate circular errors
+        bounded_errors = circular_error(bounded_df['bump_pos'].values, bounded_df['gt_pos'].values)
+        unbounded_errors = circular_error(unbounded_df['bump_pos'].values, unbounded_df['gt_pos'].values)
+        
+        # Overall statistics
+        results['bounded_mean_error'] = np.mean(bounded_errors)
+        results['bounded_std_error'] = np.std(bounded_errors)
+        results['unbounded_mean_error'] = np.mean(unbounded_errors)
+        results['unbounded_std_error'] = np.std(unbounded_errors)
+        
+        # Statistical tests
+        # Paired t-test
+        t_stat, t_pvalue = stats.ttest_rel(bounded_errors, unbounded_errors)
+        results['ttest_statistic'] = t_stat
+        results['ttest_pvalue'] = t_pvalue
+        
+        # Wilcoxon signed-rank test (non-parametric alternative)
+        wilcoxon_stat, wilcoxon_pvalue = stats.wilcoxon(bounded_errors, unbounded_errors)
+        results['wilcoxon_statistic'] = wilcoxon_stat
+        results['wilcoxon_pvalue'] = wilcoxon_pvalue
+        
+        # Detect movement phases
+        phases = detect_movement_phases(bounded_df['gt_pos'].values)
+        results['num_phases'] = len(phases)
+        
+        # Phase-wise analysis
+        phase_results = []
+        for i, phase in enumerate(phases):
+            start, end = phase['start'], phase['end']
+            
+            phase_bounded_errors = bounded_errors[start:end+1]
+            phase_unbounded_errors = unbounded_errors[start:end+1]
+            
+            if len(phase_bounded_errors) > 1:  # Need at least 2 points for comparison
+                phase_result = {
+                    'phase_index': i,
+                    'phase_type': phase['type'],
+                    'duration': end - start + 1,
+                    'bounded_mean_error': np.mean(phase_bounded_errors),
+                    'unbounded_mean_error': np.mean(phase_unbounded_errors),
+                    'error_difference': np.mean(phase_bounded_errors) - np.mean(phase_unbounded_errors)
+                }
+                
+                # Statistical test for this phase (if enough data points)
+                if len(phase_bounded_errors) >= 3:
+                    try:
+                        phase_t_stat, phase_t_pvalue = stats.ttest_rel(phase_bounded_errors, phase_unbounded_errors)
+                        phase_result['phase_ttest_pvalue'] = phase_t_pvalue
+                    except:
+                        phase_result['phase_ttest_pvalue'] = np.nan
+                else:
+                    phase_result['phase_ttest_pvalue'] = np.nan
+                
+                phase_results.append(phase_result)
+        
+        results['phase_analysis'] = phase_results
+        
+        # Time window analysis (fixed windows)
+        window_size = 20  # 20 timesteps = 1 second at 50ms per timestep
+        window_results = []
+        
+        for start_idx in range(0, len(bounded_errors), window_size):
+            end_idx = min(start_idx + window_size, len(bounded_errors))
+            
+            window_bounded_errors = bounded_errors[start_idx:end_idx]
+            window_unbounded_errors = unbounded_errors[start_idx:end_idx]
+            
+            if len(window_bounded_errors) >= 3:  # Minimum data for meaningful comparison
+                window_result = {
+                    'window_start_ms': start_idx * 50,
+                    'window_end_ms': end_idx * 50,
+                    'bounded_mean_error': np.mean(window_bounded_errors),
+                    'unbounded_mean_error': np.mean(window_unbounded_errors),
+                    'error_difference': np.mean(window_bounded_errors) - np.mean(window_unbounded_errors)
+                }
+                window_results.append(window_result)
+        
+        results['window_analysis'] = window_results
+        
+        return results
+    
+    # Analyze both datasets
+    stats_results = {}
+    
+    # Limited motion data analysis
+    limited_results = analyze_dataset(df1, df2, 'limited_motion')
+    stats_results['limited_motion'] = limited_results
+    
+    # Wide motion data analysis (if provided)
+    if df3 is not None and df4 is not None:
+        wide_results = analyze_dataset(df3, df4, 'wide_motion')
+        stats_results['wide_motion'] = wide_results
+    
+    # Print summary results
+    print("=== TRACKING PERFORMANCE ANALYSIS ===\n")
+    
+    for dataset_name, results in stats_results.items():
+        print(f"--- {dataset_name.upper()} DATASET ---")
+        print(f"Bounded model mean error: {results['bounded_mean_error']:.3f}° ± {results['bounded_std_error']:.3f}°")
+        print(f"Unbounded model mean error: {results['unbounded_mean_error']:.3f}° ± {results['unbounded_std_error']:.3f}°")
+        print(f"Error difference (bounded - unbounded): {results['bounded_mean_error'] - results['unbounded_mean_error']:.3f}°")
+        print(f"Paired t-test p-value: {results['ttest_pvalue']:.6f}")
+        print(f"Wilcoxon test p-value: {results['wilcoxon_pvalue']:.6f}")
+        print(f"Number of movement phases detected: {results['num_phases']}")
+        
+        # Phase-wise summary
+        if results['phase_analysis']:
+            up_phases = [p for p in results['phase_analysis'] if p['phase_type'] == 'up']
+            down_phases = [p for p in results['phase_analysis'] if p['phase_type'] == 'down']
+            
+            if up_phases:
+                up_error_diff = np.mean([p['error_difference'] for p in up_phases])
+                print(f"Up phases - average error difference: {up_error_diff:.3f}°")
+            
+            if down_phases:
+                down_error_diff = np.mean([p['error_difference'] for p in down_phases])
+                print(f"Down phases - average error difference: {down_error_diff:.3f}°")
+        
+        print()
+    
+    # Create visualization
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    
+    dataset_names = list(stats_results.keys())
+    for idx, (dataset_name, results) in enumerate(stats_results.items()):
+        row = idx
+        
+        # Plot 1: Error comparison over time windows
+        ax1 = axes[row, 0]
+        windows = results['window_analysis']
+        if windows:
+            window_times = [w['window_start_ms'] for w in windows]
+            bounded_errors = [w['bounded_mean_error'] for w in windows]
+            unbounded_errors = [w['unbounded_mean_error'] for w in windows]
+            
+            ax1.plot(window_times, bounded_errors, 'r-', label='Bounded', linewidth=2)
+            ax1.plot(window_times, unbounded_errors, 'orange', label='Unbounded', linewidth=2)
+            ax1.set_xlabel('Time (ms)')
+            ax1.set_ylabel('Mean Error (°)')
+            ax1.set_title(f'{dataset_name.title()}: Error Over Time Windows')
+            ax1.legend()
+            ax1.grid(True, alpha=0.3)
+        
+        # Plot 2: Phase-wise comparison
+        ax2 = axes[row, 1]
+        phases = results['phase_analysis']
+        if phases:
+            phase_indices = [p['phase_index'] for p in phases]
+            bounded_phase_errors = [p['bounded_mean_error'] for p in phases]
+            unbounded_phase_errors = [p['unbounded_mean_error'] for p in phases]
+            
+            x_pos = np.arange(len(phase_indices))
+            width = 0.35
+            
+            ax2.bar(x_pos - width/2, bounded_phase_errors, width, label='Bounded', color='red', alpha=0.7)
+            ax2.bar(x_pos + width/2, unbounded_phase_errors, width, label='Unbounded', color='orange', alpha=0.7)
+            
+            ax2.set_xlabel('Movement Phase')
+            ax2.set_ylabel('Mean Error (°)')
+            ax2.set_title(f'{dataset_name.title()}: Error by Movement Phase')
+            ax2.set_xticks(x_pos)
+            ax2.set_xticklabels([f"{p['phase_type']}\n{p['phase_index']}" for p in phases], rotation=45)
+            ax2.legend()
+            ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    # Save results if requested
+    if save_results:
+        # Save detailed results to JSON
+        import json
+        with open('tracking_performance_analysis.json', 'w') as f:
+            # Convert numpy types to regular Python types for JSON serialization
+            def convert_numpy(obj):
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                elif isinstance(obj, np.floating):
+                    return float(obj)
+                elif isinstance(obj, np.integer):
+                    return int(obj)
+                elif isinstance(obj, dict):
+                    return {key: convert_numpy(value) for key, value in obj.items()}
+                elif isinstance(obj, list):
+                    return [convert_numpy(item) for item in obj]
+                return obj
+            
+            json.dump(convert_numpy(stats_results), f, indent=2)
+        
+        # Save summary CSV
+        summary_data = []
+        for dataset_name, results in stats_results.items():
+            summary_data.append({
+                'dataset': dataset_name,
+                'bounded_mean_error': results['bounded_mean_error'],
+                'bounded_std_error': results['bounded_std_error'],
+                'unbounded_mean_error': results['unbounded_mean_error'],
+                'unbounded_std_error': results['unbounded_std_error'],
+                'error_difference': results['bounded_mean_error'] - results['unbounded_mean_error'],
+                'ttest_pvalue': results['ttest_pvalue'],
+                'wilcoxon_pvalue': results['wilcoxon_pvalue'],
+                'num_phases': results['num_phases']
+            })
+        
+        summary_df = pd.DataFrame(summary_data)
+        summary_df.to_csv('tracking_performance_summary.csv', index=False)
+        
+        plt.savefig('tracking_performance_analysis.png', dpi=300, bbox_inches='tight')
+        print("Results saved to:")
+        print("- tracking_performance_analysis.json (detailed results)")
+        print("- tracking_performance_summary.csv (summary table)")
+        print("- tracking_performance_analysis.png (visualization)")
+    
+    plt.show()
+    
+    return stats_results
+
 def change_velocity_offline(v, theta):
     """
     Brian2 implementation recreating the exact same behavior as sim_capocaccia_changeVelocity_offline.
@@ -1026,6 +1304,15 @@ if __name__ == "__main__":
     path3="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/gv_validation_run_60.0.txt"
     path4="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/gv_validation_run_60.0.txt"
     plot_comparison(path1=path1,path2=path2, path3=path3,path4=path4)
+    
+    # Perform statistical analysis comparing bounded vs unbounded models
+    stats_results = analyze_tracking_performance(
+        path1=path1,  # Bounded model (limited motion)
+        path2=path2,  # Unbounded model (limited motion)
+        path3=path3,  # Bounded model (wide motion)
+        path4=path4,  # Unbounded model (wide motion)
+        save_results=True
+    )
     
     # change_velocity_offline(v=2, theta=90)
     
