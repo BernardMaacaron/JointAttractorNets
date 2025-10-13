@@ -553,17 +553,53 @@ def validate_all_trajectories(folder_path="./capocaccia", output_dir="/home/ffer
 
     return validation_df
 
-def plot_comparison(path1, path2):
-    """Plot comparison between two validation result files."""
+def plot_comparison(path1, path2, path3, path4):
+    """Plot comparison between four validation result files with rescaled x-axis."""
     from mpl_toolkits.axes_grid1 import make_axes_locatable
+    from scipy import interpolate
     
     df1 = pd.read_csv(path1)
     df2 = pd.read_csv(path2)
+    df3 = pd.read_csv(path3)
+    df4 = pd.read_csv(path4)
     
+    # Use df3 and df4 length as reference (they should have the same length)
+    reference_length = max(len(df3), len(df4))
+    
+    # df1 and df2 should extend 100ms (2 timesteps) beyond df3/df4
+    extended_length = reference_length + 2  # Add 100ms = 2 timesteps at 50ms each
+    
+    # Create x-axis for reference data (df3, df4) - convert to milliseconds (50ms per timestep)
+    x_reference = np.arange(reference_length) * 50
+    
+    # Create extended x-axis for df1 and df2 data
+    x_extended = np.arange(extended_length) * 50
+    
+    # Function to rescale data to match target length
+    def rescale_data(data, target_length):
+        if len(data) == target_length:
+            return data
+        # Create interpolation function
+        old_x = np.linspace(0, target_length-1, len(data))
+        new_x = np.linspace(0, target_length-1, target_length)
+        interpolator = interpolate.interp1d(old_x, data, kind='linear', 
+                                          bounds_error=False, fill_value='extrapolate')
+        return interpolator(new_x)
+    
+    # Rescale df1 and df2 data to extended length (reference + 100ms)
+    df1_gt_rescaled = rescale_data(df1['gt_pos'].values, extended_length)
+    df1_bump_rescaled = rescale_data(df1['bump_pos'].values, extended_length)
+    df2_bump_rescaled = rescale_data(df2['bump_pos'].values, extended_length)
+
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax.plot(df1['gt_pos'], label='Ground Truth', linewidth=2)
-    ax.plot(df1['bump_pos'], label='Bump Position (Boundary)', linestyle='--', color='red', linewidth=2)
-    ax.plot(df2['bump_pos'], label='Bump Position (No Boundary)', linestyle=':', color='orange', linewidth=2)
+    
+    # Plot with rescaled x-axis - df1/df2 extend 100ms beyond df3/df4
+    ax.plot(x_extended, df1_gt_rescaled, label='Ground Truth', linewidth=2, linestyle='--')
+    ax.plot(x_extended, df1_bump_rescaled, label='Bump Position (Bounded)', linestyle='--', color='red', linewidth=2)
+    ax.plot(x_extended, df2_bump_rescaled, label='Bump Position (Unbounded)', linestyle='--', color='orange', linewidth=2)
+    ax.plot(x_reference, df3['gt_pos'], linewidth=2, linestyle='-', color='C0')
+    ax.plot(x_reference, df3['bump_pos'], linestyle='-', color='red', linewidth=2)
+    ax.plot(x_reference, df4['bump_pos'], linestyle='-', color='orange', linewidth=2)
     
     # Add upper and lower boundary lines at ±44 degrees
     ax.axhline(y=44, color='blue', linestyle='--', linewidth=2, alpha=0.8)
@@ -571,24 +607,32 @@ def plot_comparison(path1, path2):
     
     # Add boundary labels aligned to start from 5ms
     ax.text(5, 46, 'Upper boundary', ha='left', va='bottom', 
-            fontsize=14, weight='bold', color='blue')
+            fontsize=16, color='blue')
     ax.text(5, -46, 'Lower boundary', ha='left', va='top', 
-            fontsize=14, weight='bold', color='blue')
+            fontsize=16, color='blue')
     
     # ax.set_title(f"Comparison of Validation Results", weight='bold')
-    ax.set_xlabel('Time (ms)', weight='bold',fontsize=14)
-    ax.set_ylabel('Position (deg)', weight='bold',fontsize=14)
-    ax.tick_params(axis='both', which='major', labelsize=12)
+    ax.set_xlabel('Time (ms)', fontsize=18)
+    ax.set_ylabel('Position (deg)', fontsize=18)
+    ax.tick_params(axis='both', which='major', labelsize=14)
     ax.set_ylim([-90, 90])
     ax.legend()
     ax.grid(True)
+    
+    # Add text boxes to distinguish scenarios
+    ax.text(0.02, 0.98, 'Dashed lines: Limited motion data', transform=ax.transAxes, 
+            fontsize=16, va='top', ha='left',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+    ax.text(0.02, 0.93, 'Solid lines: Wide motion data', transform=ax.transAxes, 
+            fontsize=16, va='top', ha='left',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgray', alpha=0.8))
 
     # Add top subplot for velocity step function
     divider = make_axes_locatable(ax)
     tax = divider.append_axes("top", size="15%", pad=0.3)
 
     # Create target velocity step function based on ground truth direction changes
-    gt_pos = df1['gt_pos'].values
+    gt_pos = df1_gt_rescaled  # Use rescaled data
     
     # Find direction changes in ground truth (zero crossings of derivative)
     gt_diff = np.diff(gt_pos)
@@ -614,8 +658,8 @@ def plot_comparison(path1, path2):
     for idx, change_point in enumerate(direction_changes):
         vel_amplitude = 60.0 if idx % 2 == 0 else -60.0  # Alternate +60, -60, +60, -60...
         
-        # Add vertical transition at direction change
-        time_extended.extend([change_point, change_point])
+        # Add vertical transition at direction change - convert to milliseconds
+        time_extended.extend([change_point * 50, change_point * 50])
         if idx == 0:
             vel_extended.extend([0, vel_amplitude])  # Start from 0 for first step
         else:
@@ -625,22 +669,81 @@ def plot_comparison(path1, path2):
         # Continue at this level until next change (or end)
         if idx < len(direction_changes) - 1:
             next_change = direction_changes[idx + 1]
-            time_extended.append(next_change)
+            time_extended.append(next_change * 50)
             vel_extended.append(vel_amplitude)
         else:
             # Last segment - extend to end
-            time_extended.append(len(gt_pos) - 1)
+            time_extended.append((len(gt_pos) - 1) * 50)
             vel_extended.append(vel_amplitude)
     
     # Convert to numpy arrays
     time_extended = np.array(time_extended)
     vel_extended = np.array(vel_extended)
     
-    # Plot step function
-    tax.plot(time_extended, vel_extended, linewidth=2, color='green')
-    tax.set_ylabel('Target Vel\n(deg/s)', fontsize=14, weight='bold')
+    # Calculate velocity from dashed ground truth (df1_gt_rescaled) 
+    # Extract plateau values and create step function
+    velocities = []
+    
+    # Calculate velocity between consecutive points (50ms apart)
+    for i in range(len(df1_gt_rescaled) - 1):
+        pos_diff = df1_gt_rescaled[i + 1] - df1_gt_rescaled[i]
+        # Handle circular wrapping for position differences > 180 degrees
+        if pos_diff > 180:
+            pos_diff -= 360
+        elif pos_diff < -180:
+            pos_diff += 360
+        
+        # Convert to velocity (deg/s): position_diff / time_diff
+        velocity = pos_diff / 0.05  # 50ms = 0.05s
+        velocities.append(velocity)
+    
+    # Find max and min velocities from calculated dashed velocities
+    if len(velocities) > 0:
+        max_velocity = max(velocities)
+        min_velocity = min(velocities)
+    else:
+        max_velocity = 40.0
+        min_velocity = -40.0
+    
+    # Create simple dashed step function alternating between max/min values
+    # Use the same direction changes as the solid step function
+    dashed_vel_extended = []
+    dashed_time_extended = []
+    
+    for idx, change_point in enumerate(direction_changes):
+        vel_amplitude = max_velocity if idx % 2 == 0 else min_velocity  # Alternate max/min
+        
+        # Add vertical transition at direction change - convert to milliseconds
+        dashed_time_extended.extend([change_point * 50, change_point * 50])
+        if idx == 0:
+            dashed_vel_extended.extend([0, vel_amplitude])  # Start from 0 for first step
+        else:
+            prev_amplitude = min_velocity if vel_amplitude == max_velocity else max_velocity  # Previous amplitude (opposite)
+            dashed_vel_extended.extend([prev_amplitude, vel_amplitude])
+        
+        # Continue at this level until next change (or end)
+        if idx < len(direction_changes) - 1:
+            next_change = direction_changes[idx + 1]
+            dashed_time_extended.append(next_change * 50)
+            dashed_vel_extended.append(vel_amplitude)
+        else:
+            # Last segment - extend to end
+            dashed_time_extended.append((len(gt_pos) - 1) * 50)
+            dashed_vel_extended.append(vel_amplitude)
+    
+    # Convert to numpy arrays
+    dashed_time_extended = np.array(dashed_time_extended)
+    dashed_vel_extended = np.array(dashed_vel_extended)
+    
+    # Plot solid step function (original)
+    tax.plot(time_extended, vel_extended, linewidth=2, color='green', linestyle='-', label='Wide motion velocity')
+    
+    # Plot dashed step function (from dashed ground truth)
+    tax.plot(dashed_time_extended, dashed_vel_extended, linewidth=2, color='green', linestyle='--', alpha=0.7, label='Limited motion velocity')
+    
+    tax.set_ylabel('Velocity\n(deg/s)', fontsize=16)
     tax.set_ylim([-70, 70])
-    tax.tick_params(axis='y', which='major', labelsize=12)
+    tax.tick_params(axis='y', which='major', labelsize=14)
     tax.grid(True, alpha=0.3)
     tax.set_xlim(ax.get_xlim())
 
@@ -808,13 +911,13 @@ def change_velocity_offline(v, theta):
     # Add square highlighting the time window for firing rate computation (600-650 ms)
     time_start_ms, time_end_ms = 600, 650
     rect = plt.Rectangle((time_start_ms, 0), time_end_ms - time_start_ms, ring.numNeurons, 
-                        linewidth=2, edgecolor='red', facecolor='none', alpha=0.7)
+                        linewidth=2, edgecolor='red', facecolor='red', alpha=0.1)
     ax.add_patch(rect)
     
     # Add box highlighting the input period (0-100 ms) in dark orange
     input_start_ms, input_end_ms = 0, 100
     input_rect = plt.Rectangle((input_start_ms, 0), input_end_ms - input_start_ms, ring.numNeurons, 
-                              linewidth=3, edgecolor='darkorange', facecolor='none', alpha=0.7)
+                              linewidth=3, edgecolor='darkorange', facecolor='darkorange', alpha=0.1)
     ax.add_patch(input_rect)
     
     # Plot ground truth as blue scatter points starting from 0ms
@@ -827,7 +930,7 @@ def change_velocity_offline(v, theta):
     ax.scatter([], [], c='black', s=20, marker='s', label='Spikes')
     
     # Set up main axis with bold text (removed y-axis title)
-    ax.set_xlabel("Time (ms)", fontsize=18, weight='bold')
+    ax.set_xlabel("Time (ms)", fontsize=18)
     ax.legend(fontsize=16)
     
     # Remove y-axis ticks and labels from main raster plot
@@ -839,7 +942,7 @@ def change_velocity_offline(v, theta):
     # Plot velocity profile on top axis starting from 0ms
     velocity_time_ms = np.arange(len(velocity_profile))  # Start from 0ms
     tax.plot(velocity_time_ms, velocity_profile, 'g-', linewidth=3, label='Velocity')
-    tax.set_ylabel("Velocity\n(deg/ms)", fontsize=16, weight='bold')
+    tax.set_ylabel("Velocity\n(deg/ms)", fontsize=16)
     tax.set_xlim(0, 900)  # Match main plot x-limits
     tax.set_xticklabels([])  # Remove x-axis labels for cleaner look
     tax.grid(True, alpha=0.3)
@@ -864,7 +967,7 @@ def change_velocity_offline(v, theta):
     # Plot firing rate profile with bold text
     angle_positions = np.linspace(0, ring.numNeurons, len(firing_rate))  # Normal orientation: 0 to 120
     rax.plot(firing_rate, angle_positions, 'r-', linewidth=2)
-    rax.set_xlabel("Firing\nRate (Hz)", fontsize=16, weight='bold')
+    rax.set_xlabel("Firing\nRate (Hz)", fontsize=16)
     rax.set_ylim(0, ring.numNeurons)
     # Remove y-axis ticks and labels from firing rate plot
     rax.set_yticks([])
@@ -878,7 +981,7 @@ def change_velocity_offline(v, theta):
     initial_cue_ma = initial_cue  # Convert from A to mA
     # Plot with correct orientation (0° at bottom, 360° at top)
     cax.plot(initial_cue_ma, np.linspace(0, ring.numNeurons, len(initial_cue)), color='darkorange', linewidth=3)
-    cax.set_xlabel("Input Current\n(mA)", fontsize=16, weight='bold')
+    cax.set_xlabel("Input Current\n(mA)", fontsize=16)
     # Set appropriate x-axis limits - fix the scale issue
     cax.set_xlim(np.min(initial_cue_ma)-10, np.max(initial_cue_ma)+5)  # Scale back to reasonable range
     cax.set_ylim(0, ring.numNeurons)
@@ -891,7 +994,7 @@ def change_velocity_offline(v, theta):
     cax.tick_params(axis='y', labelsize=14)
     cax.tick_params(axis='x', labelsize=14)
     # Add y-axis title "Angle (degree)" on the left with bold text and larger size
-    cax.set_ylabel("Angle (degree)", fontsize=20, weight='bold')
+    cax.set_ylabel("Angle (degree)", fontsize=20)
     cax.invert_xaxis()
     
     plt.tight_layout()
@@ -920,7 +1023,9 @@ if __name__ == "__main__":
 
     path1="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/gv_validation_compressed_run_60.0.txt"
     path2="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/gv_validation_compressed_run_60.0.txt"
-    plot_comparison(path1=path1,path2=path2)
+    path3="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_boundary/target_velocity_training/gv_validation_run_60.0.txt"
+    path4="/home/fferrari-iit.local/JointAttractorNets/Results_Training/Network_no_boundary/target_velocity_training/gv_validation_run_60.0.txt"
+    plot_comparison(path1=path1,path2=path2, path3=path3,path4=path4)
     
     # change_velocity_offline(v=2, theta=90)
     
