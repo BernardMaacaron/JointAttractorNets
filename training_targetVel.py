@@ -594,13 +594,13 @@ def plot_comparison(path1, path2, path3, path4):
     fig, ax = plt.subplots(figsize=(12, 8))
     
     # Plot with rescaled x-axis - df1/df2 extend 100ms beyond df3/df4
-    ax.plot(x_extended, df1_gt_rescaled, label='Ground Truth', linewidth=2, linestyle='--')
-    ax.plot(x_extended, df1_bump_rescaled, label='Bump Position (Bounded)', linestyle='--', color='red', linewidth=2)
-    ax.plot(x_extended, df2_bump_rescaled, label='Bump Position (Unbounded)', linestyle='--', color='orange', linewidth=2)
+    ax.plot(x_extended, df1_gt_rescaled, linewidth=2, linestyle='--')
+    ax.plot(x_extended, df1_bump_rescaled, linewidth=2, linestyle='--', color='red')
+    ax.plot(x_extended, df2_bump_rescaled, linewidth=2, linestyle='--', color='orange')
     ax.plot(x_reference, df3['gt_pos'], linewidth=2, linestyle='-', color='C0')
-    ax.plot(x_reference, df3['bump_pos'], linestyle='-', color='red', linewidth=2)
-    ax.plot(x_reference, df4['bump_pos'], linestyle='-', color='orange', linewidth=2)
-    
+    ax.plot(x_reference, df3['bump_pos'], linewidth=2, linestyle='-', color='red')
+    ax.plot(x_reference, df4['bump_pos'], linewidth=2, linestyle='-', color='orange')
+
     # Add upper and lower boundary lines at ±44 degrees
     ax.axhline(y=44, color='blue', linestyle='--', linewidth=2, alpha=0.8)
     ax.axhline(y=-44, color='blue', linestyle='--', linewidth=2, alpha=0.8)
@@ -616,14 +616,14 @@ def plot_comparison(path1, path2, path3, path4):
     ax.set_ylabel('Position (deg)', fontsize=18)
     ax.tick_params(axis='both', which='major', labelsize=14)
     ax.set_ylim([-90, 90])
-    ax.legend()
+    ax.legend(fontsize=16)
     ax.grid(True)
     
     # Add text boxes to distinguish scenarios
     ax.text(0.02, 0.98, 'Dashed lines: Limited motion data', transform=ax.transAxes, 
             fontsize=16, va='top', ha='left',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
-    ax.text(0.02, 0.93, 'Solid lines: Wide motion data', transform=ax.transAxes, 
+    ax.text(0.02, 0.90, 'Solid lines: Wide motion data', transform=ax.transAxes, 
             fontsize=16, va='top', ha='left',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgray', alpha=0.8))
 
@@ -744,7 +744,7 @@ def plot_comparison(path1, path2, path3, path4):
     tax.set_ylabel('Velocity\n(deg/s)', fontsize=16)
     tax.set_ylim([-70, 70])
     tax.tick_params(axis='y', which='major', labelsize=14)
-    tax.grid(True, alpha=0.3)
+    tax.grid(True)
     tax.set_xlim(ax.get_xlim())
 
     plt.tight_layout()
@@ -1202,7 +1202,7 @@ def change_velocity_offline(v, theta):
     time_points_ms = np.arange(len(ground_truth_positions))  # Start from 0ms
     # Convert ground truth positions to pixel coordinates (0-120 range)
     gt_pixels = np.array(ground_truth_positions) * ring.numNeurons / 360
-    ax.scatter(time_points_ms, gt_pixels, c='blue', s=10, label='Ground Truth', alpha=0.8)
+    ax.scatter(time_points_ms, gt_pixels, c='C0', s=10, label='Ground Truth', alpha=0.8)
     
     # Add a dummy plot for spikes legend entry
     ax.scatter([], [], c='black', s=20, marker='s', label='Spikes')
@@ -1210,6 +1210,7 @@ def change_velocity_offline(v, theta):
     # Set up main axis with bold text (removed y-axis title)
     ax.set_xlabel("Time (ms)", fontsize=18)
     ax.legend(fontsize=16)
+    ax.grid(True)
     
     # Remove y-axis ticks and labels from main raster plot
     ax.set_yticks([])
@@ -1223,7 +1224,7 @@ def change_velocity_offline(v, theta):
     tax.set_ylabel("Velocity\n(deg/ms)", fontsize=16)
     tax.set_xlim(0, 900)  # Match main plot x-limits
     tax.set_xticklabels([])  # Remove x-axis labels for cleaner look
-    tax.grid(True, alpha=0.3)
+    tax.grid(True)
     # Add y-axis labels for velocity
     tax.tick_params(axis='y', labelsize=14)
     # Ensure velocity plot is visible
@@ -1251,7 +1252,7 @@ def change_velocity_offline(v, theta):
     rax.set_yticks([])
     rax.set_yticklabels([])
     rax.tick_params(axis='x', labelsize=14)
-    rax.grid(True, alpha=0.3)
+    rax.grid(True)
     
     # Plot initial input cue on left axis - fix the conversion and make visible
     angle_axis = np.linspace(0, 360, len(initial_cue))
@@ -1274,6 +1275,7 @@ def change_velocity_offline(v, theta):
     # Add y-axis title "Angle (degree)" on the left with bold text and larger size
     cax.set_ylabel("Angle (degree)", fontsize=20)
     cax.invert_xaxis()
+    cax.grid(True)
     
     plt.tight_layout()
     plt.savefig('brian2_prova.png') 
@@ -1314,6 +1316,6 @@ if __name__ == "__main__":
         save_results=True
     )
     
-    # change_velocity_offline(v=2, theta=90)
+    change_velocity_offline(v=2, theta=90)
     
     print("Training and validation with acceleration complete!")
