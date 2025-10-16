@@ -594,12 +594,12 @@ def plot_comparison(path1, path2, path3, path4):
     fig, ax = plt.subplots(figsize=(12, 8))
     
     # Plot with rescaled x-axis - df1/df2 extend 100ms beyond df3/df4
-    ax.plot(x_extended, df1_gt_rescaled, linewidth=2, linestyle='--')
+    ax.plot(x_extended, df1_gt_rescaled, linewidth=2, linestyle='--', color='C0')
     ax.plot(x_extended, df1_bump_rescaled, linewidth=2, linestyle='--', color='red')
     ax.plot(x_extended, df2_bump_rescaled, linewidth=2, linestyle='--', color='orange')
-    ax.plot(x_reference, df3['gt_pos'], linewidth=2, linestyle='-', color='C0')
-    ax.plot(x_reference, df3['bump_pos'], linewidth=2, linestyle='-', color='red')
-    ax.plot(x_reference, df4['bump_pos'], linewidth=2, linestyle='-', color='orange')
+    ax.plot(x_reference, df3['gt_pos'], linewidth=2, linestyle='-', color='C0',label='Ground Truth')
+    ax.plot(x_reference, df3['bump_pos'], linewidth=2, linestyle='-', color='red', label='Bump Position (Bounded)')
+    ax.plot(x_reference, df4['bump_pos'], linewidth=2, linestyle='-', color='orange', label='Bump Position (Unbounded)')
 
     # Add upper and lower boundary lines at ±44 degrees
     ax.axhline(y=44, color='blue', linestyle='--', linewidth=2, alpha=0.8)
@@ -623,7 +623,7 @@ def plot_comparison(path1, path2, path3, path4):
     ax.text(0.02, 0.98, 'Dashed lines: Limited motion data', transform=ax.transAxes, 
             fontsize=16, va='top', ha='left',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
-    ax.text(0.02, 0.90, 'Solid lines: Wide motion data', transform=ax.transAxes, 
+    ax.text(0.02, 0.91, 'Solid lines: Wide motion data', transform=ax.transAxes, 
             fontsize=16, va='top', ha='left',
             bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgray', alpha=0.8))
 
@@ -1202,18 +1202,21 @@ def change_velocity_offline(v, theta):
     time_points_ms = np.arange(len(ground_truth_positions))  # Start from 0ms
     # Convert ground truth positions to pixel coordinates (0-120 range)
     gt_pixels = np.array(ground_truth_positions) * ring.numNeurons / 360
-    ax.scatter(time_points_ms, gt_pixels, c='C0', s=10, label='Ground Truth', alpha=0.8)
+    ax.scatter(time_points_ms, gt_pixels, c='C0', s=10, alpha=0.8)
     
-    # Add a dummy plot for spikes legend entry
-    ax.scatter([], [], c='black', s=20, marker='s', label='Spikes')
+    # Add legend entries with desired symbols
+    ax.plot([], [], c='C0', linewidth=2, label='Ground Truth')  # Line symbol for ground truth
+    ax.scatter([], [], c='black', s=20, marker='s', label='Spikes')  # Square symbol for spikes
     
     # Set up main axis with bold text (removed y-axis title)
     ax.set_xlabel("Time (ms)", fontsize=18)
     ax.legend(fontsize=16)
-    ax.grid(True)
     
-    # Remove y-axis ticks and labels from main raster plot
-    ax.set_yticks([])
+    # Add horizontal grid lines corresponding to cax angle ticks
+    angle_ticks = np.arange(0, ring.numNeurons + 1, 20)
+    ax.set_yticks(angle_ticks)
+    ax.grid(True, which='major', axis='both')  # Both vertical and horizontal lines
+    # Remove y-axis tick labels but keep the tick positions for grid
     ax.set_yticklabels([])
     # Ensure x-axis labels are visible and properly sized
     ax.tick_params(axis='x', labelsize=16, colors='black')
@@ -1248,11 +1251,19 @@ def change_velocity_offline(v, theta):
     rax.plot(firing_rate, angle_positions, 'r-', linewidth=2)
     rax.set_xlabel("Firing\nRate (Hz)", fontsize=16)
     rax.set_ylim(0, ring.numNeurons)
-    # Remove y-axis ticks and labels from firing rate plot
-    rax.set_yticks([])
+    
+    # Set up grid lines for firing rate plot
+    angle_ticks = np.arange(0, ring.numNeurons + 1, 20)
+    rax.set_yticks(angle_ticks)  # Set y-ticks for horizontal grid lines
+    
+    # Add custom x-axis ticks and grid lines for firing rate
+    firing_rate_ticks = [0, 50, 100]  # Add tick at 50 Hz between 0 and 100
+    rax.set_xticks(firing_rate_ticks)
+    rax.grid(True, which='major', axis='both')  # Both horizontal and vertical grid lines
+    
+    # Remove y-axis tick labels but keep the tick positions for grid
     rax.set_yticklabels([])
     rax.tick_params(axis='x', labelsize=14)
-    rax.grid(True)
     
     # Plot initial input cue on left axis - fix the conversion and make visible
     angle_axis = np.linspace(0, 360, len(initial_cue))
